@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <memory> // shared_ptr
 #include "token.h"
 #include "position.h"
 
