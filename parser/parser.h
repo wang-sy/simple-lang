@@ -2,7 +2,7 @@
 
 #include "token/position.h"
 #include "scanner/scanner.h"
-#include "ast/ast.h"
+#include "ast/define.h"
 #include <vector>
 
 using namespace std;
@@ -32,7 +32,7 @@ private:
     /**
      * Error reports that the current token is unexpected.
      */
-    void Error(int pos, string msg);
+    void Error(int pos, const string& msg);
 
     int Expect(token::Token tok);
 
@@ -53,6 +53,10 @@ private:
     // In this function, const, decl_type and name are all parsed.
     // e.g. 'int a', 'int a = 1', 'int a, b, c';
     shared_ptr<ast::DeclNode> ParseVarDecl(int decl_pos, bool is_const, token::Token decl_type, int name_pos, const string& name);
+
+    // ParseSingleVarDecl Get Single Var Decl.
+    // Var may be 'int', 'char', 'array' type.
+    shared_ptr<ast::DeclNode> ParseSingleVarDecl(int is_const, int decl_pos, token::Token decl_type, int name_pos, const string& name);
 
     // ParseStmtList is called for parse statement list.
     shared_ptr<ast::StmtNode> ParseStmtList();

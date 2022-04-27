@@ -1,0 +1,3 @@
+/Users/wangsy/codes/simple-lang/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/Users/wangsy/codes/simple-lang/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/wangsy/codes/simple-lang/cmake-build-debug/CMakeFiles/simple_lang.dir
