@@ -2,14 +2,15 @@
 #include <fstream>
 #include <sstream>
 
-#include "scanner.h"
+#include "scanner/scanner.h"
+#include "parser/parser.h"
 
 using namespace std;
 
 class StdErrHandler: public ErrorHandler{
 public:
     ~StdErrHandler() override = default;
-    void Report(const Position& pos, const string& msg) override {
+    void Report(const token::Position& pos, const string& msg) override {
         cerr << "(" << pos.line << ", " << pos.column << ") :=> " << msg << endl;
     }
 };
@@ -35,7 +36,7 @@ string GetInputFile(const string& filename) {
  * @brief LexicalAnalysisMain is main function for first lab.
  */
 void LexicalAnalysisMain() {
-    auto test_file = make_shared<File>();
+    auto test_file = make_shared<token::File>();
     test_file->name = "testfile.txt";
     string txt = GetInputFile(test_file->name);
     test_file->size = (int)txt.size();
@@ -49,16 +50,16 @@ void LexicalAnalysisMain() {
 
     while (true) {
         int pos;
-        Token tok;
+        token::Token tok;
         string lit;
         scanner.Scan(&pos, &tok, &lit);
 
-        if (tok == Token::END_OF_FILE) {
+        if (tok == token::Token::END_OF_FILE) {
             break;
         }
 
         string token_name = GetTokenName(tok);
-        if (tok == Token::STRCON || tok == Token::CHARCON) {
+        if (tok == token::Token::STRCON || tok == token::Token::CHARCON) {
             f_out << token_name << " " << lit.substr(1, lit.size() - 2) << endl;
             continue;
         }
@@ -69,7 +70,22 @@ void LexicalAnalysisMain() {
     f_out.close();
 }
 
+void ParsingMain() {
+    auto test_file = make_shared<token::File>();
+    test_file->name = "testfile.txt";
+    string txt = GetInputFile(test_file->name);
+    test_file->size = (int)txt.size();
+
+    auto err_handler = make_shared<StdErrHandler>();
+
+    Parser parser(test_file, txt, err_handler);
+    auto ast_file = parser.Parse();
+    for (auto decl: ast_file.decl_) {
+        cout << decl->Pos() << " --> " << decl->End() << " : " << decl->Type() << endl;
+    }
+}
+
 int main() {
-    LexicalAnalysisMain();
+    ParsingMain();
     return 0;
 }
