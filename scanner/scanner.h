@@ -2,8 +2,8 @@
 
 #include <string>
 #include <memory> // shared_ptr
-#include "token.h"
-#include "position.h"
+#include "token/token.h"
+#include "token/position.h"
 
 using namespace std;
 
@@ -13,7 +13,7 @@ using namespace std;
 class ErrorHandler {
 public:
     virtual ~ErrorHandler() = default;
-    virtual void Report(const Position& pos, const string& msg) = 0;
+    virtual void Report(const token::Position& pos, const string& msg) = 0;
 };
 
 /**
@@ -21,7 +21,7 @@ public:
  */
 class Scanner {
 public:
-    Scanner(const shared_ptr<File>& file, const string& src,const shared_ptr<ErrorHandler>& err);
+    Scanner(const shared_ptr<token::File>& file, const string& src,const shared_ptr<ErrorHandler>& err);
 
     /**
      * @brief Scan the next token.
@@ -29,7 +29,7 @@ public:
      * @token Token
      * @lit next token's literal
      */
-    void Scan(int* pos, Token* tok, string* lit);
+    void Scan(int* pos, token::Token* tok, string* lit);
 
 
 
@@ -75,7 +75,7 @@ private:
 
     // immutable state
     string src_;
-    shared_ptr<File> file_;
+    shared_ptr<token::File> file_;
 
     // scanning state
     char ch_{};

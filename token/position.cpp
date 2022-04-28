@@ -2,8 +2,10 @@
 // Created by Saiyu Wang on 2022/4/19.
 //
 
-#include "position.h"
+#include "token/position.h"
 #include "error.h"
+
+namespace token{
 
 void File::AddLine(int offset) {
     mux_.lock();
@@ -41,3 +43,5 @@ Position File::GetPositionByOffset(int offset) {
 
     return pos;
 }
+
+}// namespace token

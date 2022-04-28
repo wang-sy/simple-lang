@@ -1,8 +1,11 @@
-#include "token.h"
+#include "token/token.h"
 #include <string>
 #include <map>
 
 using namespace std;
+
+
+namespace token{
 
 const static map<Token, string> token_names{
     {ILLEGAL,"ILLEGAL"}, // 无效token
@@ -152,3 +155,5 @@ Token LookUp(const string& ident) {
 
     return get_keyword_token_iter->second;
 }
+
+}//namespace token

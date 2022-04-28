@@ -4,6 +4,11 @@
 
 using namespace std;
 
+namespace token{
+
+// NoPos means token not exist.
+const int kNoPos = -1;
+
 enum Token {
     ILLEGAL, // 无效token
 
@@ -95,3 +100,5 @@ inline bool IsOperator(const Token& tok) { return operator_beg < tok && tok < op
  * @param tok token
  */
 inline bool IsKeyword(const Token& tok) { return keyword_beg < tok && tok < keyword_end; }
+
+} // namespace token

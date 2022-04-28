@@ -21,7 +21,7 @@ inline bool IsDigit(const char& c) {
 
 
 // Impl.
-Scanner::Scanner(const shared_ptr<File> &file, const string &src, const shared_ptr<ErrorHandler> &err) {
+Scanner::Scanner(const shared_ptr<token::File> &file, const string &src, const shared_ptr<ErrorHandler> &err) {
     error_count = 0;
 
     src_.assign(src);
@@ -34,7 +34,7 @@ Scanner::Scanner(const shared_ptr<File> &file, const string &src, const shared_p
     Next();
 }
 
-void Scanner::Scan(int *pos, Token *tok, string *lit) {
+void Scanner::Scan(int *pos, token::Token *tok, string *lit) {
     SkipWhiteSpace();
 
     // current token start
@@ -43,115 +43,115 @@ void Scanner::Scan(int *pos, Token *tok, string *lit) {
     char ch = ch_;
     if (IsLetter(ch)) {
         lit->assign(ScanIdentifier());
-        *tok = LookUp(*lit);
+        *tok = token::LookUp(*lit);
         return;
     }
 
     if (IsDigit(ch)) {
         lit->assign(ScanNumber());
-        *tok = Token::INTCON;
+        *tok = token::Token::INTCON;
         return;
     }
 
     Next(); // always make progress
     switch (ch) {
         case -1:
-            *tok = Token::END_OF_FILE;
+            *tok = token::Token::END_OF_FILE;
             break;
         case '"':
-            *tok = Token::STRCON;
+            *tok = token::Token::STRCON;
             lit->assign(ScanString());
             break;
         case '\'':
-            *tok = Token::CHARCON;
+            *tok = token::Token::CHARCON;
             lit->assign(ScanChar());
             break;
         case ':':
-            *tok = Token::COLON;
+            *tok = token::Token::COLON;
             lit->assign(":");
             break;
         case ',':
-            *tok = Token::COMMA;
+            *tok = token::Token::COMMA;
             lit->assign(",");
             break;
         case ';':
-            *tok = Token::SEMICN;
+            *tok = token::Token::SEMICN;
             lit->assign(";");
             break;
         case '(':
-            *tok = Token::LPARENT;
+            *tok = token::Token::LPARENT;
             lit->assign("(");
             break;
         case ')':
-            *tok = Token::RPARENT;
+            *tok = token::Token::RPARENT;
             lit->assign(")");
             break;
         case '[':
-            *tok = Token::LBRACK;
+            *tok = token::Token::LBRACK;
             lit->assign("[");
             break;
         case ']':
-            *tok = Token::RBRACK;
+            *tok = token::Token::RBRACK;
             lit->assign("]");
             break;
         case '{':
-            *tok = Token::LBRACE;
+            *tok = token::Token::LBRACE;
             lit->assign("{");
             break;
         case '}':
-            *tok = Token::RBRACE;
+            *tok = token::Token::RBRACE;
             lit->assign("}");
             break;
         case '+':
-            *tok = Token::PLUS;
+            *tok = token::Token::PLUS;
             lit->assign("+");
             break;
         case '-':
-            *tok = Token::MINU;
+            *tok = token::Token::MINU;
             lit->assign("-");
             break;
         case '*':
-            *tok = Token::MULT;
+            *tok = token::Token::MULT;
             lit->assign("*");
             break;
         case '/':
-            *tok = Token::DIV;
+            *tok = token::Token::DIV;
             lit->assign("/");
             break;
         case '<':
             if (ch_ == '=') {
                 Next();
-                *tok = Token::LEQ;
+                *tok = token::Token::LEQ;
                 lit->assign("<=");
             } else {
-                *tok = Token::LSS;
+                *tok = token::Token::LSS;
                 lit->assign("<");
             }
             break;
         case '>':
             if (ch_ == '=') {
                 Next();
-                *tok = Token::GEQ;
+                *tok = token::Token::GEQ;
                 lit->assign(">=");
             } else {
-                *tok = Token::GRE;
+                *tok = token::Token::GRE;
                 lit->assign(">");
             }
             break;
         case '=':
             if (ch_ == '=') {
                 Next();
-                *tok = Token::EQL;
+                *tok = token::Token::EQL;
                 lit->assign("==");
             } else {
-                *tok = Token::ASSIGN;
+                *tok = token::Token::ASSIGN;
                 lit->assign("=");
             }
             break;
         case '!':
             if (ch_ == '=') {
                 Next();
-                *tok = Token::NEQ;
+                *tok = token::Token::NEQ;
                 lit->assign("!=");
             } else {
                 Error(*pos, "unknown token");
@@ -160,7 +160,7 @@ void Scanner::Scan(int *pos, Token *tok, string *lit) {
         default:
             // next reports unexpected BOMs - don't repeat
             Error(*pos, "illegal character");
-            *tok = ILLEGAL;
+            *tok = token::Token::ILLEGAL;
             string new_lit;
             new_lit.push_back(ch);
             lit->assign(new_lit);

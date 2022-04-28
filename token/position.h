@@ -6,6 +6,8 @@
 
 using namespace std;
 
+namespace token{
+
 class Position {
 public:
     string filename;
@@ -35,3 +37,4 @@ private:
     mutex mux_{};
 };
 
+}// namespace token
