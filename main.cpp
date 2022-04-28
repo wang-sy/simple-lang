@@ -80,9 +80,8 @@ void ParsingMain() {
 
     Parser parser(test_file, txt, err_handler);
     auto ast_file = parser.Parse();
-    for (auto decl: ast_file.decl_) {
-        cout << decl->Pos() << " --> " << decl->End() << " : " << decl->Type() << endl;
-    }
+
+    cout << ast_file.ToString() << endl;
 }
 
 int main() {

@@ -2,7 +2,7 @@
 
 #include "token/position.h"
 #include "scanner/scanner.h"
-#include "ast/define.h"
+#include "ast/ast.h"
 #include <vector>
 
 using namespace std;
