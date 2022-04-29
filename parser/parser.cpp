@@ -226,10 +226,10 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl() {
         Error(pos_, "for begin of a declear, expect int or char");
         return make_shared<ast::BadDeclNode>();
     }
-
     Next();
 
     int name_pos = pos_;
+    string name = lit_;
     if(tok_ != token::Token::IDENFR) {
         Error(pos_, "for var decl, expect <int/char> indetifier");
         return make_shared<ast::BadDeclNode>();
@@ -237,7 +237,7 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl() {
 
     Expect(token::Token::IDENFR);
     
-    return ParseVarDecl(decl_pos, is_const, decl_type, name_pos, lit_);
+    return ParseVarDecl(decl_pos, is_const, decl_type, name_pos, name);
 }
 
 // ParseVarDecl is called for parse variable decl.
@@ -249,9 +249,9 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl(int decl_pos, bool is_const, toke
 
     // scan token, until get ','.
     auto var_decl_node = make_shared<ast::VarDeclNode>();
-    do {
+    while (true) {
         // Parse current var, current tok_ is '=' or ',' or ';'.
-        var_decl_node->decls_.push_back(ParseSingleVarDecl(decl_pos, is_const, decl_type, cur_name_pos, cur_name));
+        var_decl_node->decls_.push_back(ParseSingleVarDecl(is_const, decl_pos, decl_type, cur_name_pos, cur_name));
 
         if (tok_ == token::Token::SEMICN) {
             break;
@@ -264,13 +264,10 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl(int decl_pos, bool is_const, toke
 
         // current tok_ is ',' :=> get next identfire's name.
         Expect(token::Token::COMMA);
-        cout << "Run ASSIGN " << pos_ << "=> cur_name_pos" << " && " <<  lit_ << "=> cur_name" << endl;
         cur_name_pos = pos_;
         cur_name = lit_;
-        cout << "AFTER ASSIGN " << cur_name_pos << "=> cur_name_pos" << " && " <<  cur_name << "=> cur_name" << endl;
         Expect(token::Token::IDENFR);
-        cout << "AFTER Expect " << cur_name_pos << "=> cur_name_pos" << " && " <<  cur_name << "=> cur_name" << endl;
-    } while (tok_ != token::SEMICN);
+    }
 
     Expect(token::Token::SEMICN);
 
@@ -280,11 +277,12 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl(int decl_pos, bool is_const, toke
 // ParseSingleVarDecl parse single var.
 // Calling this function, current token is IDENFR.
 shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos, token::Token decl_type, int name_pos, const string name) {
-    cout << "ParseSingleVar: get name => " << name << endl;
     auto single_decl_node = make_shared<ast::SingleVarDeclNode>();
     single_decl_node->type_ = NewBasicTypeNode(decl_type);
     single_decl_node->name_ = make_shared<ast::IdentNode>(name);
     single_decl_node->is_const_ = is_const;
+
+    cout << "ParseSingleVarDecl: " << is_const << endl;
 
     // if token is '[', means var is a array.
     bool is_array = false;
@@ -329,7 +327,7 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
     Expect(token::Token::ASSIGN);
 
     if (!is_array) {
-        if (tok_ == token::Token::INTCON || token::Token::CHARCON) {
+        if (tok_ == token::Token::INTCON || tok_ == token::Token::CHARCON) {
             single_decl_node->val_ = make_shared<ast::BasicLitNode>(tok_, lit_);
         } else if (tok_ == token::Token::IDENFR) {
             single_decl_node->val_ = make_shared<ast::IdentNode>(lit_);
@@ -350,6 +348,7 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
     composite_lit_stack.push(composite_lit_node);
 
     auto current_composite_lit_node = composite_lit_node;
+    shared_ptr<ast::CompositeLitNode> sub_composite_lit_node;
     Expect(token::Token::LBRACE);
     while (!composite_lit_stack.empty()) {
         switch (tok_) {
@@ -365,8 +364,10 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
             case token::Token::COMMA:
                 break;
             case token::LBRACE:
+                sub_composite_lit_node = make_shared<ast::CompositeLitNode>();
+                current_composite_lit_node->items_.push_back(sub_composite_lit_node);
                 composite_lit_stack.push(current_composite_lit_node);
-                current_composite_lit_node = make_shared<ast::CompositeLitNode>();
+                current_composite_lit_node = sub_composite_lit_node;
                 break;
             case token::RBRACE:
                 composite_lit_stack.pop();

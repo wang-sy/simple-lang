@@ -46,7 +46,7 @@
         <VarDeclNode>
             <decl>
                 <SingleVarDeclNode>
-                    <is_const>true</is_const>
+                    <is_const>false</is_const>
                     <type>
                         <IntTypeNode />
                     </type>
@@ -64,13 +64,13 @@
         <VarDeclNode>
             <decl>
                 <SingleVarDeclNode>
-                    <is_const>true</is_const>
+                    <is_const>false</is_const>
                     <type>
                         <ArrayTypeNode>
                             <size>1</size>
                             <item>
                                 <ArrayTypeNode>
-                                    <size>1</size>
+                                    <size>3</size>
                                     <item>
                                         <IntTypeNode />
                                     </item>
@@ -84,8 +84,45 @@
                         </IdentNode>
                     </name>
                     <val>
-                        <CompositeLitNode></CompositeLitNode>
+                        <CompositeLitNode>
+                            <item>
+                                <CompositeLitNode>
+                                    <item>
+                                        <BasicLitNode>
+                                            <token>INTCON</token>
+                                            <value>1</value>
+                                        </BasicLitNode>
+                                    </item>
+                                    <item>
+                                        <BasicLitNode>
+                                            <token>INTCON</token>
+                                            <value>2</value>
+                                        </BasicLitNode>
+                                    </item>
+                                    <item>
+                                        <BasicLitNode>
+                                            <token>INTCON</token>
+                                            <value>3</value>
+                                        </BasicLitNode>
+                                    </item>
+                                </CompositeLitNode>
+                            </item>
+                        </CompositeLitNode>
                     </val>
+                </SingleVarDeclNode>
+            </decl>
+            <decl>
+                <SingleVarDeclNode>
+                    <is_const>false</is_const>
+                    <type>
+                        <IntTypeNode />
+                    </type>
+                    <name>
+                        <IdentNode>
+                            <name>fakenews</name>
+                        </IdentNode>
+                    </name>
+                    <val></val>
                 </SingleVarDeclNode>
             </decl>
         </VarDeclNode>
@@ -137,7 +174,7 @@
                                 <VarDeclNode>
                                     <decl>
                                         <SingleVarDeclNode>
-                                            <is_const>true</is_const>
+                                            <is_const>false</is_const>
                                             <type>
                                                 <ArrayTypeNode>
                                                     <size>2</size>
@@ -153,17 +190,50 @@
                                             </type>
                                             <name>
                                                 <IdentNode>
-                                                    <name>[</name>
+                                                    <name>array</name>
                                                 </IdentNode>
                                             </name>
                                             <val>
-                                                <CompositeLitNode></CompositeLitNode>
+                                                <CompositeLitNode>
+                                                    <item>
+                                                        <CompositeLitNode>
+                                                            <item>
+                                                                <BasicLitNode>
+                                                                    <token>INTCON</token>
+                                                                    <value>1</value>
+                                                                </BasicLitNode>
+                                                            </item>
+                                                            <item>
+                                                                <BasicLitNode>
+                                                                    <token>INTCON</token>
+                                                                    <value>2</value>
+                                                                </BasicLitNode>
+                                                            </item>
+                                                        </CompositeLitNode>
+                                                    </item>
+                                                    <item>
+                                                        <CompositeLitNode>
+                                                            <item>
+                                                                <BasicLitNode>
+                                                                    <token>INTCON</token>
+                                                                    <value>3</value>
+                                                                </BasicLitNode>
+                                                            </item>
+                                                            <item>
+                                                                <BasicLitNode>
+                                                                    <token>INTCON</token>
+                                                                    <value>4</value>
+                                                                </BasicLitNode>
+                                                            </item>
+                                                        </CompositeLitNode>
+                                                    </item>
+                                                </CompositeLitNode>
                                             </val>
                                         </SingleVarDeclNode>
                                     </decl>
                                     <decl>
                                         <SingleVarDeclNode>
-                                            <is_const>true</is_const>
+                                            <is_const>false</is_const>
                                             <type>
                                                 <ArrayTypeNode>
                                                     <size>4</size>
@@ -236,13 +306,13 @@
                                 <VarDeclNode>
                                     <decl>
                                         <SingleVarDeclNode>
-                                            <is_const>true</is_const>
+                                            <is_const>false</is_const>
                                             <type>
                                                 <CharTypeNode />
                                             </type>
                                             <name>
                                                 <IdentNode>
-                                                    <name>,</name>
+                                                    <name>here</name>
                                                 </IdentNode>
                                             </name>
                                             <val></val>
@@ -250,7 +320,7 @@
                                     </decl>
                                     <decl>
                                         <SingleVarDeclNode>
-                                            <is_const>true</is_const>
+                                            <is_const>false</is_const>
                                             <type>
                                                 <CharTypeNode />
                                             </type>
@@ -264,7 +334,7 @@
                                     </decl>
                                     <decl>
                                         <SingleVarDeclNode>
-                                            <is_const>true</is_const>
+                                            <is_const>false</is_const>
                                             <type>
                                                 <CharTypeNode />
                                             </type>
@@ -278,7 +348,7 @@
                                     </decl>
                                     <decl>
                                         <SingleVarDeclNode>
-                                            <is_const>true</is_const>
+                                            <is_const>false</is_const>
                                             <type>
                                                 <CharTypeNode />
                                             </type>
