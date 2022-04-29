@@ -21,6 +21,9 @@ class Parser {
 public:
     Parser(const shared_ptr<token::File> &file, const string &src, const shared_ptr<ErrorHandler> &err);
 
+    // Report all parse errors.
+    void ReportErrors();
+
     // Parse the source code and return the corresponding ast file tree.
     ast::FileNode Parse();
 private:

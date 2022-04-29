@@ -1,0 +1,10 @@
+int temp = 10, fake = 11;
+int foobar;
+
+char fake_func(int fuck, char shit) {
+    int array[2][2] = {{1,2}, {3,4}}, fake_array[4] = {1,2,3,4};
+}
+
+void main () {
+    char here, there, that, fake_here = 10;
+}
