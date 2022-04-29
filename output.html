@@ -1,19 +1,94 @@
 <FileNode>
     <name></name>
     <decl>
-        <BadDeclNode />
+        <VarDeclNode>
+            <decl>
+                <SingleVarDeclNode>
+                    <is_const>false</is_const>
+                    <type>
+                        <IntTypeNode />
+                    </type>
+                    <name>
+                        <IdentNode>
+                            <name>temp</name>
+                        </IdentNode>
+                    </name>
+                    <val>
+                        <BasicLitNode>
+                            <token>INTCON</token>
+                            <value>10</value>
+                        </BasicLitNode>
+                    </val>
+                </SingleVarDeclNode>
+            </decl>
+            <decl>
+                <SingleVarDeclNode>
+                    <is_const>false</is_const>
+                    <type>
+                        <IntTypeNode />
+                    </type>
+                    <name>
+                        <IdentNode>
+                            <name>fake</name>
+                        </IdentNode>
+                    </name>
+                    <val>
+                        <BasicLitNode>
+                            <token>INTCON</token>
+                            <value>11</value>
+                        </BasicLitNode>
+                    </val>
+                </SingleVarDeclNode>
+            </decl>
+        </VarDeclNode>
     </decl>
     <decl>
-        <BadDeclNode />
+        <VarDeclNode>
+            <decl>
+                <SingleVarDeclNode>
+                    <is_const>true</is_const>
+                    <type>
+                        <IntTypeNode />
+                    </type>
+                    <name>
+                        <IdentNode>
+                            <name>foobar</name>
+                        </IdentNode>
+                    </name>
+                    <val></val>
+                </SingleVarDeclNode>
+            </decl>
+        </VarDeclNode>
     </decl>
     <decl>
-        <BadDeclNode />
-    </decl>
-    <decl>
-        <BadDeclNode />
-    </decl>
-    <decl>
-        <BadDeclNode />
+        <VarDeclNode>
+            <decl>
+                <SingleVarDeclNode>
+                    <is_const>true</is_const>
+                    <type>
+                        <ArrayTypeNode>
+                            <size>1</size>
+                            <item>
+                                <ArrayTypeNode>
+                                    <size>1</size>
+                                    <item>
+                                        <IntTypeNode />
+                                    </item>
+                                </ArrayTypeNode>
+                            </item>
+                        </ArrayTypeNode>
+                    </type>
+                    <name>
+                        <IdentNode>
+                            <name>global_array</name>
+                        </IdentNode>
+                    </name>
+                    <val>
+                        <CompositeLitNode></CompositeLitNode>
+                    </val>
+                </SingleVarDeclNode>
+            </decl>
+        </VarDeclNode>
     </decl>
     <decl>
         <FuncDeclNode>
@@ -78,12 +153,13 @@
                                             </type>
                                             <name>
                                                 <IdentNode>
-                                                    <name>array</name>
+                                                    <name>[</name>
                                                 </IdentNode>
                                             </name>
                                             <val>
                                                 <CompositeLitNode></CompositeLitNode>
                                             </val>
+                                        </SingleVarDeclNode>
                                     </decl>
                                     <decl>
                                         <SingleVarDeclNode>
@@ -129,7 +205,9 @@
                                                     </item>
                                                 </CompositeLitNode>
                                             </val>
+                                        </SingleVarDeclNode>
                                     </decl>
+                                </VarDeclNode>
                             </decl>
                         </DeclStmtNode>
                     </stmt>
@@ -164,10 +242,11 @@
                                             </type>
                                             <name>
                                                 <IdentNode>
-                                                    <name>here</name>
+                                                    <name>,</name>
                                                 </IdentNode>
                                             </name>
                                             <val></val>
+                                        </SingleVarDeclNode>
                                     </decl>
                                     <decl>
                                         <SingleVarDeclNode>
@@ -181,6 +260,7 @@
                                                 </IdentNode>
                                             </name>
                                             <val></val>
+                                        </SingleVarDeclNode>
                                     </decl>
                                     <decl>
                                         <SingleVarDeclNode>
@@ -194,6 +274,7 @@
                                                 </IdentNode>
                                             </name>
                                             <val></val>
+                                        </SingleVarDeclNode>
                                     </decl>
                                     <decl>
                                         <SingleVarDeclNode>
@@ -212,7 +293,9 @@
                                                     <value>10</value>
                                                 </BasicLitNode>
                                             </val>
+                                        </SingleVarDeclNode>
                                     </decl>
+                                </VarDeclNode>
                             </decl>
                         </DeclStmtNode>
                     </stmt>

@@ -59,7 +59,7 @@ private:
 
     // ParseSingleVarDecl Get Single Var Decl.
     // Var may be 'int', 'char', 'array' type.
-    shared_ptr<ast::DeclNode> ParseSingleVarDecl(int is_const, int decl_pos, token::Token decl_type, int name_pos, const string& name);
+    shared_ptr<ast::DeclNode> ParseSingleVarDecl(int is_const, int decl_pos, token::Token decl_type, int name_pos, const string name);
 
     // ParseStmtList is called for parse statement list.
     shared_ptr<ast::StmtNode> ParseStmtList();

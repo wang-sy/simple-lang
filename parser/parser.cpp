@@ -72,6 +72,7 @@ void Parser::Error(int pos, const string& msg) {
 int Parser::Expect(token::Token tok) {
     int pos = pos_;
     if (tok_ != tok) {
+        cout << "ERROR:" << "expect" << token::GetTokenName(tok) << endl;;
         Error(pos, "expect " + token::GetTokenName(tok));
     }
 
@@ -94,7 +95,6 @@ shared_ptr<ast::DeclNode> Parser::ParseDecl() {
         Next();
     }
 
-    cout << "ParseDecl, get decl_type" << token::GetTokenName(tok_) << ", " << lit_ << endl;
     token::Token decl_type = tok_;
     Next();
     if (decl_type != token::Token::INTTK && decl_type != token::Token::CHARTK && decl_type != token::Token::VOIDTK) {
@@ -104,7 +104,11 @@ shared_ptr<ast::DeclNode> Parser::ParseDecl() {
 
     int name_pos = pos_;
     string name = lit_;
-    Expect(token::Token::IDENFR);
+    if (tok_ != token::Token::MAINTK && tok_ != token::Token::IDENFR) {
+        Error(pos_, "for decl, expect <int/char/void> name");
+        return make_shared<ast::BadDeclNode>();
+    }
+    Next();
 
     if (tok_ == token::Token::LPARENT) {
         if (is_const) {
@@ -230,6 +234,8 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl() {
         Error(pos_, "for var decl, expect <int/char> indetifier");
         return make_shared<ast::BadDeclNode>();
     }
+
+    Expect(token::Token::IDENFR);
     
     return ParseVarDecl(decl_pos, is_const, decl_type, name_pos, lit_);
 }
@@ -238,33 +244,33 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl() {
 // In this function, const, decl_type and name are all parsed.
 // e.g. 'int a', 'int a = 1', 'int a, b, c';
 shared_ptr<ast::DeclNode> Parser::ParseVarDecl(int decl_pos, bool is_const, token::Token decl_type, int name_pos, const string& name) {
-    cout << "ParseVarDecl: " << "decl_pos: " << decl_pos << ", is_const: " << is_const << ", decl_type: " << token::GetTokenName(decl_type) << ", name_pos: " << name_pos << ", name: " << name << endl;
-    int cur_decl_pos = decl_pos;
-    bool cur_is_const = is_const;
-    token::Token cur_decl_type = decl_type;
     int cur_name_pos = name_pos;
     string cur_name = name;
 
     // scan token, until get ','.
     auto var_decl_node = make_shared<ast::VarDeclNode>();
-    while (tok_ != token::SEMICN) {
-        // Parse current var;
-        var_decl_node->decls_.push_back(ParseSingleVarDecl(cur_decl_pos, cur_is_const, cur_decl_type, cur_name_pos, cur_name));
+    do {
+        // Parse current var, current tok_ is '=' or ',' or ';'.
+        var_decl_node->decls_.push_back(ParseSingleVarDecl(decl_pos, is_const, decl_type, cur_name_pos, cur_name));
 
         if (tok_ == token::Token::SEMICN) {
-            continue;
+            break;
         }
 
         if (tok_ != token::Token::COMMA) {
             Error(pos_, "for var decl step word, expect ',' or ';'");
             return make_shared<ast::BadDeclNode>();
         }
-        
+
         // current tok_ is ',' :=> get next identfire's name.
-        Next();
+        Expect(token::Token::COMMA);
+        cout << "Run ASSIGN " << pos_ << "=> cur_name_pos" << " && " <<  lit_ << "=> cur_name" << endl;
         cur_name_pos = pos_;
         cur_name = lit_;
-    }
+        cout << "AFTER ASSIGN " << cur_name_pos << "=> cur_name_pos" << " && " <<  cur_name << "=> cur_name" << endl;
+        Expect(token::Token::IDENFR);
+        cout << "AFTER Expect " << cur_name_pos << "=> cur_name_pos" << " && " <<  cur_name << "=> cur_name" << endl;
+    } while (tok_ != token::SEMICN);
 
     Expect(token::Token::SEMICN);
 
@@ -273,15 +279,12 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl(int decl_pos, bool is_const, toke
 
 // ParseSingleVarDecl parse single var.
 // Calling this function, current token is IDENFR.
-shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos, token::Token decl_type, int name_pos, const string &name) {
-    cout << "ParseSingleVarDecl" << "( " << is_const << ", " << decl_pos << ", " << decl_type << ", " << name_pos << ", " << name << ")" << endl;
+shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos, token::Token decl_type, int name_pos, const string name) {
+    cout << "ParseSingleVar: get name => " << name << endl;
     auto single_decl_node = make_shared<ast::SingleVarDeclNode>();
     single_decl_node->type_ = NewBasicTypeNode(decl_type);
     single_decl_node->name_ = make_shared<ast::IdentNode>(name);
     single_decl_node->is_const_ = is_const;
-
-    Expect(token::Token::IDENFR);
-
 
     // if token is '[', means var is a array.
     bool is_array = false;
@@ -345,16 +348,18 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
     single_decl_node->val_ = composite_lit_node;
     stack<shared_ptr<ast::CompositeLitNode>> composite_lit_stack;
     composite_lit_stack.push(composite_lit_node);
-    
+
     auto current_composite_lit_node = composite_lit_node;
     Expect(token::Token::LBRACE);
     while (!composite_lit_stack.empty()) {
         switch (tok_) {
             case token::Token::INTCON:
             case token::Token::CHARCON:
+                cout << "GetConstLit" << lit_ << endl;
                 current_composite_lit_node->items_.push_back(make_shared<ast::BasicLitNode>(tok_, lit_));
                 break;
             case token::Token::IDENFR:
+                cout << "GetINDETLit" << lit_ << endl;
                 current_composite_lit_node->items_.push_back(make_shared<ast::IdentNode>(lit_));
                 break;
             case token::Token::COMMA:
@@ -376,6 +381,8 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
         // Point to next token.
         Next();
     }
+
+    cout << "ParseSingleVar ok, current lit_ is :=> " << lit_ << "token_is -> " << token::GetTokenName(tok_) << endl;
 
     return single_decl_node;
 }
