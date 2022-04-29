@@ -82,6 +82,8 @@ void ParsingMain() {
     auto ast_file = parser.Parse();
 
     cout << ast_file.ToString() << endl;
+
+    parser.ReportErrors();
 }
 
 int main() {

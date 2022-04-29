@@ -522,6 +522,7 @@ public:
         ret += "<type>" + (type_ == nullptr ? "" : type_->ToString()) + "</type>";
         ret += "<name>" + (name_ == nullptr ? "" : name_->ToString()) + "</name>";
         ret += "<val>" + (val_ == nullptr ? "" : val_->ToString()) + "</val>";
+        ret += "</SingleVarDeclNode>";
         return ret;
     }
 public:
@@ -543,6 +544,7 @@ public:
         for (auto decl: decls_) {
             ret += "<decl>" + (decl == nullptr ? "" : decl->ToString()) + "</decl>";
         }
+        ret += "</VarDeclNode>";
         return ret;
     }
 public:
