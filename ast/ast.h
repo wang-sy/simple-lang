@@ -237,7 +237,7 @@ class ArrayTypeNode : public TypeNode {
 public:
     ArrayTypeNode() = default;
     ~ArrayTypeNode() override = default;
-    ArrayTypeNode(const shared_ptr<TypeNode>& item, int size) :item_(item), size_(size) {};
+    ArrayTypeNode(int size, const shared_ptr<TypeNode>& item) :size_(size), item_(item) {};
     NodeType Type() const override { return NodeType::ArrayType; };
     string ToString() const override {
         string ret = "<ArrayTypeNode>";
@@ -247,8 +247,8 @@ public:
         return ret;
     }
 public:
-    int size_ = 0;
-    shared_ptr<TypeNode> item_;
+    int size_;
+    shared_ptr<TypeNode> item_{};
 };
 
 // ====================================================================
@@ -270,7 +270,7 @@ public:
         return ret;
     }
 public:
-    string name_;
+    string name_{};
 };
 
 
@@ -299,8 +299,8 @@ public:
         return ret;
     }
 public:
-    string val_;
     token::Token tok_;
+    string val_;
 };
 
 class CompositeLitNode: public ExprNode { 
@@ -317,7 +317,7 @@ public:
         return ret;
     }
 public:
-    vector<shared_ptr<ExprNode>> items_;
+    vector<shared_ptr<ExprNode>> items_{};
 };
 
 // ParenExprNode represents a parenthesized expression.
@@ -334,7 +334,7 @@ public:
         return ret;
     }
 public:
-    shared_ptr<ExprNode> expr_;
+    shared_ptr<ExprNode> expr_{};
 };
 
 // IndexExprNode represents an index expression.
@@ -352,7 +352,7 @@ public:
         return ret;
     }
 public:
-    shared_ptr<ExprNode> x_, index_;
+    shared_ptr<ExprNode> x_{}, index_{};
 };
 
 // CallExprNode represents a function call expression.
@@ -372,8 +372,8 @@ public:
         return ret;
     }
 public:
-    shared_ptr<ExprNode> fun_;
-    vector<shared_ptr<ExprNode>> args_;
+    shared_ptr<ExprNode> fun_{};
+    vector<shared_ptr<ExprNode>> args_{};
 };
 
 // UnaryExprNode represents a unary expression.
@@ -387,11 +387,12 @@ public:
         string ret = "<UnaryExprNode>";
         ret += "<op>" + token::GetTokenName(op_tok_) + "</op>";
         ret += "<x>" + (x_ == nullptr ? "" : x_->ToString()) + "</x>";
+        ret += "</UnaryExprNode>";
         return ret;
     }
 public:
-    token::Token op_tok_;
-    shared_ptr<ExprNode> x_;
+    token::Token op_tok_{};
+    shared_ptr<ExprNode> x_{};
 };
 
 // BianryExprNode represents a binary expression.
@@ -407,11 +408,12 @@ public:
         ret += "<op>" + token::GetTokenName(op_tok_) + "</op>";
         ret += "<x>" + (x_ == nullptr ? "" : x_->ToString()) + "</x>";
         ret += "<y>" + (y_ == nullptr ? "" : y_->ToString()) + "</y>";
+        ret += "</BinaryExprNode>";
         return ret;
     }
 public:
-    token::Token op_tok_;
-    shared_ptr<ExprNode> x_, y_;
+    token::Token op_tok_{};
+    shared_ptr<ExprNode> x_{}, y_{};
 };
 
 // ====================================================================
@@ -441,8 +443,8 @@ public:
         return ret;
     }
 public:
-    shared_ptr<IdentNode> name_;
-    shared_ptr<TypeNode> type_;
+    shared_ptr<IdentNode> name_{};
+    shared_ptr<TypeNode> type_{};
 };
 
 
@@ -462,7 +464,7 @@ public:
         return ret;
     }
 public:
-    vector<shared_ptr<FieldNode>> fields_;
+    vector<shared_ptr<FieldNode>> fields_{};
 };
 
 // ====================================================================
@@ -499,6 +501,7 @@ public:
         ret += "<name>" + (name_ == nullptr ? "" : name_->ToString()) + "</name>";
         ret += "<params>" + (params_ == nullptr ? "" : params_->ToString()) + "</params>";
         ret += "<body>" + (body_ == nullptr ? "" : body_->ToString()) + "</body>";
+        ret += "</FuncDeclNode>";
         return ret;
     }
 public:
@@ -548,7 +551,7 @@ public:
         return ret;
     }
 public:
-    vector<shared_ptr<DeclNode>> decls_;
+    vector<shared_ptr<DeclNode>> decls_{};
 };
 
 // ====================================================================
@@ -661,7 +664,7 @@ public:
         return ret;
     }
 public:
-    token::Token tok_;
+    token::Token tok_{};
 };
 
 // BlockStmtNode represents a block statement.
@@ -701,8 +704,8 @@ public:
     }
 public:
     shared_ptr<ExprNode> cond_{};
-    shared_ptr<BlockStmtNode> body_;
-    shared_ptr<StmtNode> else_;
+    shared_ptr<BlockStmtNode> body_{};
+    shared_ptr<StmtNode> else_{};
 };
 
 // CaseStmtNode represents a case statement.
@@ -724,7 +727,7 @@ public:
     }
 public:
     shared_ptr<ExprNode> cond_{};
-    vector<shared_ptr<StmtNode>> body_;
+    vector<shared_ptr<StmtNode>> body_{};
 };
 
 // SwitchStmtNode represents a switch statement.
@@ -744,7 +747,7 @@ public:
     }
 public:
     shared_ptr<ExprNode> cond_{};
-    shared_ptr<BlockStmtNode> body_; // case only.
+    shared_ptr<BlockStmtNode> body_{}; // case only.
 };
 
 // ====================================================================

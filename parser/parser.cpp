@@ -35,7 +35,7 @@ shared_ptr<ast::TypeNode> NewArrayTypeNode(token::Token tok, int first_dimension
     if (second_dimension == -1) {
         array_type_node->item_ = NewBasicTypeNode(tok);
     } else {
-        array_type_node->item_ = make_shared<ast::ArrayTypeNode>(NewBasicTypeNode(tok), second_dimension);
+        array_type_node->item_ = make_shared<ast::ArrayTypeNode>(second_dimension, NewBasicTypeNode(tok));
     }
 
     return array_type_node;
@@ -208,6 +208,8 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
         default:
             return make_shared<ast::BadStmtNode>();
     }
+
+    return make_shared<ast::BadStmtNode>();
 }
 
 // ParseVarDecl is called for parse variable decl.
@@ -276,13 +278,11 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl(int decl_pos, bool is_const, toke
 
 // ParseSingleVarDecl parse single var.
 // Calling this function, current token is IDENFR.
-shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos, token::Token decl_type, int name_pos, const string name) {
+shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos, token::Token decl_type, int name_pos, const string& name) {
     auto single_decl_node = make_shared<ast::SingleVarDeclNode>();
     single_decl_node->type_ = NewBasicTypeNode(decl_type);
     single_decl_node->name_ = make_shared<ast::IdentNode>(name);
     single_decl_node->is_const_ = is_const;
-
-    cout << "ParseSingleVarDecl: " << is_const << endl;
 
     // if token is '[', means var is a array.
     bool is_array = false;
@@ -354,11 +354,9 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
         switch (tok_) {
             case token::Token::INTCON:
             case token::Token::CHARCON:
-                cout << "GetConstLit" << lit_ << endl;
                 current_composite_lit_node->items_.push_back(make_shared<ast::BasicLitNode>(tok_, lit_));
                 break;
             case token::Token::IDENFR:
-                cout << "GetINDETLit" << lit_ << endl;
                 current_composite_lit_node->items_.push_back(make_shared<ast::IdentNode>(lit_));
                 break;
             case token::Token::COMMA:
@@ -382,8 +380,6 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
         // Point to next token.
         Next();
     }
-
-    cout << "ParseSingleVar ok, current lit_ is :=> " << lit_ << "token_is -> " << token::GetTokenName(tok_) << endl;
 
     return single_decl_node;
 }
