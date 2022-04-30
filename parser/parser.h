@@ -61,8 +61,17 @@ private:
     // Var may be 'int', 'char', 'array' type.
     shared_ptr<ast::DeclNode> ParseSingleVarDecl(int is_const, int decl_pos, token::Token decl_type, int name_pos, const string& name);
 
-    // ParseStmtList is called for parse statement list.
-    shared_ptr<ast::StmtNode> ParseStmtList();
+    // ParseCompositeLit is called for parse composite literal.
+    // @param decl_type: INTTK or CHARTK.
+    // e.g. '{ 1, 2, 3 }', '{{1,2,3}, {4,5,6}}';
+    shared_ptr<ast::ExprNode> ParseCompositeLit(token::Token decl_type);
+
+    // ParseBlockStmt is called for parse statement list.
+    shared_ptr<ast::StmtNode> ParseBlockStmt();
+
+    // ParseFieldList is called for parse field list.
+    // e.g. (int a, char b)
+    shared_ptr<ast::FieldListNode> ParseFieldList();
 
     // ParseStmt is called for parse statement.
     shared_ptr<ast::StmtNode> ParseStmt();
