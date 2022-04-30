@@ -114,6 +114,18 @@ enum NodeType {
     // A SwitchStmt node represents an expression switch statement.
     // e.g. 'switch x { ... }'
     SwitchStmt,
+    // A ForStmt node represents a for statement.
+    // e.g. for (int i = 0; i < n; i++) { ... }
+    ForStmt,
+    // A WhileStmt node represents a while statement.
+    // e.g. 'while (x == y) { ... }'
+    WhileStmt,
+    // A ScanStmt node represents a scan statement.
+    // e.g. 'scan(x)'
+    ScanStmt,
+    // A PrintfStmt node represents a printf statement.
+    // e.g. 'printf("%d", x)'
+    PrintfStmt,
     stmt_end,
 
     decl_beg,
@@ -633,6 +645,46 @@ public:
     shared_ptr<ExprNode> lhs_{}, rhs_{};
 };
 
+// ForStmtNode represents a for statement.
+class ForStmtNode: public StmtNode {
+public:
+    ForStmtNode() = default;
+    ~ForStmtNode() override = default;
+    NodeType Type() const override {return NodeType::ForStmt;};
+    string ToString() const override {
+        string ret = "<ForStmtNode>";
+        ret += "<init>" + (init_ == nullptr ? "" : init_->ToString()) + "</init>";
+        ret += "<cond>" + (cond_ == nullptr ? "" : cond_->ToString()) + "</cond>";
+        ret += "<step>" + (step_ == nullptr ? "" : step_->ToString()) + "</step>";
+        ret += "<body>" + (body_ == nullptr ? "" : body_->ToString()) + "</body>";
+        ret += "</ForStmtNode>";
+        return ret;
+    }
+public:
+    shared_ptr<StmtNode> init_{};
+    shared_ptr<StmtNode> cond_{};
+    shared_ptr<ExprNode> step_{};
+    shared_ptr<StmtNode> body_{}; 
+};
+
+// WhileStmtNode represents a while statement.
+class WhileStmtNode : public StmtNode {
+public:
+    WhileStmtNode() = default;
+    ~WhileStmtNode() override = default;
+    NodeType Type() const override {return NodeType::WhileStmt;};
+    string ToString() const override {
+        string ret = "<WhileStmtNode>";
+        ret += "<cond>" + (cond_ == nullptr ? "" : cond_->ToString()) + "</cond>";
+        ret += "<body>" + (body_ == nullptr ? "" : body_->ToString()) + "</body>";
+        ret += "</WhileStmtNode>";
+        return ret;
+    }
+public:
+    shared_ptr<ExprNode> cond_{};
+    shared_ptr<StmtNode> body_{};
+};
+
 // ReturnStmtNode represents a return statement.
 class ReturnStmtNode: public StmtNode {
 public:
@@ -748,6 +800,44 @@ public:
 public:
     shared_ptr<ExprNode> cond_{};
     shared_ptr<BlockStmtNode> body_{}; // case only.
+};
+
+// ScanStmt represents a scan statement.
+class ScanStmtNode: public StmtNode {
+public:
+    ScanStmtNode() = default;
+    ~ScanStmtNode() override = default;
+    ScanStmtNode(const shared_ptr<ExprNode>& var) :var_(var) {};
+    NodeType Type() const override {return NodeType::ScanStmt;};
+    string ToString() const override {
+        string ret = "<ScanStmtNode>";
+        ret += "<var>" + (var_ == nullptr ? "" : var_->ToString()) + "</var>";
+        ret += "</ScanStmtNode>";
+        return ret;
+    }
+public:
+    shared_ptr<ExprNode> var_{};
+};
+
+// PrintfStmt represents a printf statement.
+class PrintfStmtNode: public StmtNode {
+public:
+    PrintfStmtNode() = default;
+    ~PrintfStmtNode() override = default;
+    PrintfStmtNode(const string& fmt, const vector<shared_ptr<ExprNode>>& args) :fmt_(fmt), args_(args) {};
+    NodeType Type() const override {return NodeType::PrintfStmt;};
+    string ToString() const override {
+        string ret = "<PrintfStmtNode>";
+        ret += "<fmt>" + fmt_ + "</fmt>";
+        for (auto arg: args_) {
+            ret += "<arg>" + (arg == nullptr ? "" : arg->ToString()) + "</arg>";
+        }
+        ret += "</PrintfStmtNode>";
+        return ret;
+    }
+public:
+    string fmt_;
+    vector<shared_ptr<ExprNode>> args_;
 };
 
 // ====================================================================
