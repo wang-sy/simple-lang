@@ -256,6 +256,8 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
             return make_shared<ast::DeclStmtNode>(ParseVarDecl());
         case token::Token::IFTK:
             return ParseIfStmt();
+        case token::Token::WHILETK:
+            return ParseWhileStmt();
         case token::Token::SEMICN:
             Next();
             return make_shared<ast::EmptyStmtNode>();
@@ -490,6 +492,38 @@ shared_ptr<ast::StmtNode> Parser::ParseIfStmt() {
     }
 
     return ret_if_stmt_node;
+}
+
+shared_ptr<ast::StmtNode> Parser::ParseWhileStmt() {
+    auto ret_while_stmt_node = make_shared<ast::WhileStmtNode>();
+    if (tok_ != token::Token::WHILETK) {
+        Error(pos_, "for begin of while statement, expect while");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    if (tok_ != token::Token::LPARENT) {
+        Error(pos_, "for begin of while statement, expect '('");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    ret_while_stmt_node->cond_ = ParseExpr();
+
+    if (tok_ != token::Token::RPARENT) {
+        Error(pos_, "for begin of while statement, expect ')'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    ret_while_stmt_node->body_ = ParseBlockStmt();
+    if (tok_ != token::Token::RBRACE) {
+        Error(pos_, "for end of while statement, expect '}'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    return ret_while_stmt_node;
 }
 
 // ParseExpr is called for parse expression.

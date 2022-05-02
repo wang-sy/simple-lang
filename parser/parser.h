@@ -76,6 +76,7 @@ private:
     // ParseStmt is called for parse statement.
     shared_ptr<ast::StmtNode> ParseStmt();
     shared_ptr<ast::StmtNode> ParseIfStmt();
+    shared_ptr<ast::StmtNode> ParseWhileStmt();
     shared_ptr<ast::ExprNode> ParseExpr();
     shared_ptr<ast::ExprNode> ParseParenExpr();
     shared_ptr<ast::ExprNode> ParseBinaryExpr(int prec);
