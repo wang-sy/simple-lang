@@ -75,22 +75,33 @@ private:
 
     // ParseStmt is called for parse statement.
     shared_ptr<ast::StmtNode> ParseStmt();
-
-    shared_ptr<ast::StmtNode> ParseExprStmt();
-
     shared_ptr<ast::StmtNode> ParseIfStmt();
-
-    shared_ptr<ast::ExprNode> ParseCond(); 
-
     shared_ptr<ast::ExprNode> ParseExpr();
-    shared_ptr<ast::ExprNode> ParseSingleExpr();
-
     shared_ptr<ast::ExprNode> ParseParenExpr();
     shared_ptr<ast::ExprNode> ParseBinaryExpr(int prec);
     shared_ptr<ast::ExprNode> ParseUnaryExpr();
-    shared_ptr<ast::ExprNode> ParseCallExpr(const shared_ptr<ast::ExprNode>& func_name);
     shared_ptr<ast::ExprNode> ParsePrimaryExpr();
     shared_ptr<ast::ExprNode> ParseOperand();
+
+    // ParseCallExpr is called for parse function call expression.
+    // When Calling this function, tok_ should be '(' of function call.
+    // After Calling this function, tok_ will be ')' of function call.
+    // e.g.
+    //   start calling (arg1, arg2, arg3)  :=> tok_ is '('
+    //   end calling (arg1, arg2, arg3)    :=> tok_ is ')'
+    shared_ptr<ast::ExprNode> ParseCallExpr(const shared_ptr<ast::ExprNode>& func_name);
+
+    /**
+     * @brief ParseIndexExpr is called for parse index expression.
+     * When Calling this function, tok_ should be '['.
+     * After Calling this function, tok_ will be next token of ']'.
+     * e.g. 
+     *  - x[1] + 2 => after call token is : '+'
+     *  - x[1][3] + 2 => after call token is : '+'
+     * 
+     * @param array_name expect IdentNode for array name.
+     * @return shared_ptr<ast::ExprNode> IndexExprNode for success, BadExprNode for fail.
+     */
     shared_ptr<ast::ExprNode> ParseIndexExpr(const shared_ptr<ast::ExprNode>& array_name);
 
     // Datas.

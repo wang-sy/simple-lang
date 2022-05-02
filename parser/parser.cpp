@@ -492,23 +492,6 @@ shared_ptr<ast::StmtNode> Parser::ParseIfStmt() {
     return ret_if_stmt_node;
 }
 
-// ParseCond is called for parse condition.
-// When Calling this function, tok_ should next token of '('.
-// After Calling this function, tok_ will be next token of cond_.
-// After Calling tok_ e.g. 
-//  - if (cond_)     :=> ')'
-//  - while (cond_)  :=> ')'
-//  - for (; cond; ) :=> ';'
-shared_ptr<ast::ExprNode> Parser::ParseCond() {
-    if (tok_ != token::Token::INTCON && tok_ != token::Token::CHARCON && tok_ != token::Token::IDENFR) {
-        Error(pos_, "for condition, expect <int/char/identfr>");
-        return make_shared<ast::BadExprNode>();
-    }
-    auto cond_node = make_shared<ast::IdentNode>(lit_);
-    Next();
-    return cond_node;
-}
-
 // ParseExpr is called for parse expression.
 // Cause those tokens will only used in <for/while/if> cond_.
 // When Calling this function, tok_ should be first token of expression.
@@ -631,6 +614,12 @@ shared_ptr<ast::ExprNode> Parser::ParseOperand() {
 //   start calling (arg1, arg2, arg3)  :=> tok_ is '('
 //   end calling (arg1, arg2, arg3)    :=> tok_ is ')'
 shared_ptr<ast::ExprNode> Parser::ParseCallExpr(const shared_ptr<ast::ExprNode>& func_name) {
+    if (tok_ != token::Token::LPARENT) {
+        Error(pos_, "in function call, expect '('");
+        return make_shared<ast::BadExprNode>();
+    }
+    Next();
+
     auto func_call_expr_node = make_shared<ast::CallExprNode>();
     func_call_expr_node->fun_ = func_name;
 
@@ -643,6 +632,12 @@ shared_ptr<ast::ExprNode> Parser::ParseCallExpr(const shared_ptr<ast::ExprNode>&
         }
         Next();
     }
+
+    if (tok_ != token::Token::RPARENT) {
+        Error(pos_, "in function call, expect ')'");
+        return make_shared<ast::BadExprNode>();
+    }
+    Next();
 
     return func_call_expr_node;
 }
