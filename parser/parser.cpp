@@ -135,7 +135,11 @@ shared_ptr<ast::DeclNode> Parser::ParseFuncDecl(int decl_pos, token::Token decl_
 
     // GetBody.
     func_decl_node->body_ = ParseBlockStmt();
-    Expect(token::Token::RBRACE);
+    if (tok_ != token::Token::RBRACE) {
+        Error(pos_, "for end of a function, expect }");
+        return make_shared<ast::BadDeclNode>();
+    }
+    Next();
 
     return func_decl_node;
 }
@@ -250,7 +254,10 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
         case token::Token::INTTK:
         case token::Token::CHARTK:
             return make_shared<ast::DeclStmtNode>(ParseVarDecl());
+        case token::Token::IFTK:
+            return ParseIfStmt();
         case token::Token::SEMICN:
+            Next();
             return make_shared<ast::EmptyStmtNode>();
         default:
             return make_shared<ast::BadStmtNode>();
@@ -439,6 +446,251 @@ shared_ptr<ast::ExprNode> Parser::ParseCompositeLit(token::Token decl_type) {
 
     return composite_lit_node;
 }
+
+// ParseIfStmt is called for parse if statement.
+// When Calling this function, tok_ should be IFTK.
+// After Calling this function, tok_ will be next token of '}'.
+shared_ptr<ast::StmtNode> Parser::ParseIfStmt() {
+    auto ret_if_stmt_node = make_shared<ast::IfStmtNode>();
+    if (tok_ != token::Token::IFTK) {
+        Error(pos_, "for begin of if statement, expect if");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    if (tok_ != token::Token::LPARENT) {
+        Error(pos_, "for begin of if stament, expect if (");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    ret_if_stmt_node->cond_ = ParseExpr();
+
+    if (tok_ != token::Token::RPARENT) {
+        Error(pos_, "for begin of if statement, expect '('");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    ret_if_stmt_node->body_ = ParseBlockStmt();
+    if (tok_ != token::Token::RBRACE) {
+        Error(pos_, "for end of if statement, expect '}'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    if (tok_ == token::Token::ELSETK) {
+        Next();
+        if (tok_ == token::Token::IFTK) {
+            ret_if_stmt_node->else_ = ParseIfStmt();
+        } else {
+            ret_if_stmt_node->else_ = ParseBlockStmt();
+            Expect(token::Token::RBRACE);
+        }
+    }
+
+    return ret_if_stmt_node;
+}
+
+// ParseCond is called for parse condition.
+// When Calling this function, tok_ should next token of '('.
+// After Calling this function, tok_ will be next token of cond_.
+// After Calling tok_ e.g. 
+//  - if (cond_)     :=> ')'
+//  - while (cond_)  :=> ')'
+//  - for (; cond; ) :=> ';'
+shared_ptr<ast::ExprNode> Parser::ParseCond() {
+    if (tok_ != token::Token::INTCON && tok_ != token::Token::CHARCON && tok_ != token::Token::IDENFR) {
+        Error(pos_, "for condition, expect <int/char/identfr>");
+        return make_shared<ast::BadExprNode>();
+    }
+    auto cond_node = make_shared<ast::IdentNode>(lit_);
+    Next();
+    return cond_node;
+}
+
+// ParseExpr is called for parse expression.
+// Cause those tokens will only used in <for/while/if> cond_.
+// When Calling this function, tok_ should be first token of expression.
+// After Calling this function, tok_ will be next token of expression.
+// After Calling tok_ e.g.
+//  - if (expr == expr')  :=> '=='
+//  - fake = foo + bar;   :=> ';'
+shared_ptr<ast::ExprNode> Parser::ParseExpr() {
+    return ParseBinaryExpr(token::kLowestPrecedence + 1);
+}
+
+/**
+ * @brief ParseBinaryExpr is called for parse binary expression.
+ * When Calling this function, tok_ should be first token of binary expression.
+ * After Calling this function, tok_ will be next token of binary expression.
+ * 
+ * @param prec is prec of current token.
+ * @return shared_ptr<ast::ExprNode> BinaryExprNode for success, BadExprNode for fail.
+ */
+shared_ptr<ast::ExprNode> Parser::ParseBinaryExpr(int prec) {
+    auto left_expr_node = ParseUnaryExpr();
+
+    while (true) {
+        int tok_prec = token::GetPrecedence(tok_);
+        if (tok_prec < prec) {
+            return left_expr_node;
+        }
+
+        auto op_token = tok_;
+        Next();
+
+        auto right_expr_node = ParseBinaryExpr(tok_prec + 1);
+        left_expr_node = make_shared<ast::BinaryExprNode>(op_token, left_expr_node, right_expr_node);
+    }
+}
+
+/**
+ * @brief ParseUnaryExpr is called for parse unary expression.
+ * When Calling this function, tok_ should be first token of unary expression.
+ * After Calling this function, tok_ will be next token of unary expression.
+ * 
+ * @return shared_ptr<ast::ExprNode> UnaryExprNode for success, BadExprNode for fail.
+ */
+shared_ptr<ast::ExprNode> Parser::ParseUnaryExpr() {
+    if (tok_ == token::Token::PLUS || tok_ == token::Token::MINU) {
+        token::Token op = tok_;
+        Next();
+        return make_shared<ast::UnaryExprNode>(op, ParseUnaryExpr());
+    }
+
+    return ParsePrimaryExpr();
+}
+
+/**
+ * @brief ParsePrimaryExpr is called for parse primary expression.
+ * When Calling this function, tok_ should be first token of primary expression.
+ * After Calling this function, tok_ will be next token of primary expression.
+ * 
+ * @return shared_ptr<ast::ExprNode> <BaiscLitNode/IdentNode/CallExprNode> for success, BadExprNode for fail.
+ */
+shared_ptr<ast::ExprNode> Parser::ParsePrimaryExpr() {
+    auto x = ParseOperand();
+
+    // '(' function call.
+    if (tok_ == token::Token::LPARENT) {
+        return ParseCallExpr(x);
+    }
+
+    // '[' => index.
+    if (tok_ == token::Token::LBRACK) {
+        return ParseIndexExpr(x);
+    }
+
+    return x;
+}
+
+/**
+ * @brief ParseOperand is called for parse operand.
+ * When Calling this function, tok_ should be first token of operand.
+ * After Calling this function, tok_ will be next token of operand.
+ * e.g.
+ *  - (1 + 2 + 3) => after call token is : next token of ')'
+ *  - 1 + 2       => after call token is : '+'
+ *  - ident + 1   => after call token is : '+'
+ * 
+ * @return shared_ptr<ast::ExprNode> 
+ */
+shared_ptr<ast::ExprNode> Parser::ParseOperand() {
+    shared_ptr<ast::ExprNode> ret; 
+    switch (tok_) {
+        case token::Token::IDENFR:
+            ret = make_shared<ast::IdentNode>(lit_);
+            Next();
+            return ret;
+        case token::Token::INTCON:
+        case token::Token::CHARCON:
+        case token::Token::STRCON:
+            ret = make_shared<ast::BasicLitNode>(tok_, lit_);
+            Next();
+            return ret;
+        case token::Token::LPARENT:
+            Next();
+            ret = make_shared<ast::ParenExprNode>(ParseExpr());
+            if (tok_ != token::Token::RPARENT) {
+                Error(pos_, "in operand start with '(', expect end with ')'");
+                return make_shared<ast::BadExprNode>();
+            }
+            Next();
+            return ret;
+        default:
+            Error(pos_, "in operand, expect <int/char/idenfr/string/'('>");
+            return make_shared<ast::BadExprNode>();
+    }
+}
+
+// ParseCallExpr is called for parse function call expression.
+// When Calling this function, tok_ should be '(' of function call.
+// After Calling this function, tok_ will be ')' of function call.
+// e.g.
+//   start calling (arg1, arg2, arg3)  :=> tok_ is '('
+//   end calling (arg1, arg2, arg3)    :=> tok_ is ')'
+shared_ptr<ast::ExprNode> Parser::ParseCallExpr(const shared_ptr<ast::ExprNode>& func_name) {
+    auto func_call_expr_node = make_shared<ast::CallExprNode>();
+    func_call_expr_node->fun_ = func_name;
+
+    while (tok_ != token::Token::RPARENT) {
+        auto arg_expr_node = ParseExpr();
+        func_call_expr_node->args_.push_back(arg_expr_node);
+
+        if (tok_ != token::Token::COMMA) {
+            break;
+        }
+        Next();
+    }
+
+    return func_call_expr_node;
+}
+
+/**
+ * @brief ParseIndexExpr is called for parse index expression.
+ * When Calling this function, tok_ should be '['.
+ * After Calling this function, tok_ will be next token of ']'.
+ * e.g. 
+ *  - x[1] + 2 => after call token is : '+'
+ *  - x[1][3] + 2 => after call token is : '+'
+ * 
+ * @param array_name expect IdentNode for array name.
+ * @return shared_ptr<ast::ExprNode> IndexExprNode for success, BadExprNode for fail.
+ */
+shared_ptr<ast::ExprNode> Parser::ParseIndexExpr(const shared_ptr<ast::ExprNode>& array_name) {
+    if (tok_ == token::Token::RBRACK) {
+        Error(pos_, "for index expr, [] is not valid");
+        return make_shared<ast::BadExprNode>();
+    }
+    Next();
+
+    vector<shared_ptr<ast::ExprNode>> index_expr_nodes;
+    while (true) {
+        index_expr_nodes.push_back(ParseExpr());
+
+        if (tok_ != token::Token::RBRACK) {
+            Error(pos_, "for end of array index, expect ]");
+            return make_shared<ast::BadExprNode>();
+        }
+        Next();
+
+        
+        if (tok_ != token::Token::LBRACK) {
+            break;
+        }
+        Next();
+    }
+
+    shared_ptr<ast::ExprNode> current_node = array_name;
+    for (auto& index_expr_node : index_expr_nodes) {
+        current_node = make_shared<ast::IndexExprNode>(current_node, index_expr_node);
+    }
+
+    return current_node;
+}
+
+
 
 // Report all parse errors.
 void Parser::ReportErrors() {

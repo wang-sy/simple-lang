@@ -78,6 +78,21 @@ private:
 
     shared_ptr<ast::StmtNode> ParseExprStmt();
 
+    shared_ptr<ast::StmtNode> ParseIfStmt();
+
+    shared_ptr<ast::ExprNode> ParseCond(); 
+
+    shared_ptr<ast::ExprNode> ParseExpr();
+    shared_ptr<ast::ExprNode> ParseSingleExpr();
+
+    shared_ptr<ast::ExprNode> ParseParenExpr();
+    shared_ptr<ast::ExprNode> ParseBinaryExpr(int prec);
+    shared_ptr<ast::ExprNode> ParseUnaryExpr();
+    shared_ptr<ast::ExprNode> ParseCallExpr(const shared_ptr<ast::ExprNode>& func_name);
+    shared_ptr<ast::ExprNode> ParsePrimaryExpr();
+    shared_ptr<ast::ExprNode> ParseOperand();
+    shared_ptr<ast::ExprNode> ParseIndexExpr(const shared_ptr<ast::ExprNode>& array_name);
+
     // Datas.
 
     // Next token.

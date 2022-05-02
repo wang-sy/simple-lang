@@ -743,7 +743,7 @@ class IfStmtNode: public StmtNode {
 public:
     IfStmtNode() = default;
     ~IfStmtNode() override = default;
-    IfStmtNode(const shared_ptr<ExprNode>& cond, const shared_ptr<BlockStmtNode>& body, const shared_ptr<StmtNode>& else_stmt) :
+    IfStmtNode(const shared_ptr<ExprNode>& cond, const shared_ptr<StmtNode>& body, const shared_ptr<StmtNode>& else_stmt) :
             cond_(cond), body_(body), else_(else_stmt) {};
     NodeType Type() const override {return NodeType::BlockStmt;};
     string ToString() const override {
@@ -756,7 +756,7 @@ public:
     }
 public:
     shared_ptr<ExprNode> cond_{};
-    shared_ptr<BlockStmtNode> body_{};
+    shared_ptr<StmtNode> body_{};
     shared_ptr<StmtNode> else_{};
 };
 

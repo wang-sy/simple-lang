@@ -9,6 +9,9 @@ namespace token{
 // NoPos means token not exist.
 const int kNoPos = -1;
 
+// LowestPrecedence means the lowest precedence.
+const int kLowestPrecedence = 0;
+
 enum Token {
     ILLEGAL, // 无效token
 
@@ -100,5 +103,25 @@ inline bool IsOperator(const Token& tok) { return operator_beg < tok && tok < op
  * @param tok token
  */
 inline bool IsKeyword(const Token& tok) { return keyword_beg < tok && tok < keyword_end; }
+
+/**
+ * @brief Get the Precedence object of the token.
+ * @param tok 
+ */
+inline int GetPrecedence(const Token& tok) {
+    if (tok == Token::LSS || tok == Token::LEQ || tok == Token::GRE || tok == Token::GEQ || tok == Token::EQL || tok == Token::NEQ) {
+        return 1;
+    }
+
+    if (tok == Token::PLUS || tok == Token::MINU) {
+        return 2;
+    }
+
+    if (tok == Token::MULT || tok == Token::DIV) {
+        return 3;
+    }
+
+    return kLowestPrecedence;
+}
 
 } // namespace token
