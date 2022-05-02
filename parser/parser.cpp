@@ -249,11 +249,14 @@ shared_ptr<ast::StmtNode> Parser::ParseBlockStmt() {
 }
 
 shared_ptr<ast::StmtNode> Parser::ParseStmt() {
+    shared_ptr<ast::StmtNode> stmt_node;
     switch (tok_) {
         case token::Token::CONSTTK:
         case token::Token::INTTK:
         case token::Token::CHARTK:
             return make_shared<ast::DeclStmtNode>(ParseVarDecl());
+        case token::Token::IDENFR:
+            return ParseSimpleStmt();
         case token::Token::IFTK:
             return ParseIfStmt();
         case token::Token::WHILETK:
@@ -261,12 +264,174 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
         case token::Token::SEMICN:
             Next();
             return make_shared<ast::EmptyStmtNode>();
+        case token::Token::FORTK:
+            return ParseForStmt();
+        case token::Token::LBRACE:
+            stmt_node = ParseBlockStmt();
+            Expect(token::Token::RBRACE);
+            return stmt_node;
+        case token::Token::PRINTFTK:
+            return ParsePrintfStmt();
+        case token::Token::SCANFTK:
+            return ParseScanStmt();
+        case token::Token::SWITCHTK:
+            return ParseSwitchStmt();
+        case token::Token::RETURNTK:
+            return ParseReturnStmt();
         default:
             return make_shared<ast::BadStmtNode>();
     }
 
     return make_shared<ast::BadStmtNode>();
 }
+
+/**
+ * @brief ParseSimpleStmt is called for parse simple stmt.
+ * 
+ * @return shared_ptr<ast::StmtNode> 
+ */
+shared_ptr<ast::StmtNode> Parser::ParseSimpleStmt() {
+    auto x = ParseExpr();
+
+    shared_ptr<ast::ExprNode> y;
+    switch (tok_) {
+        case token::Token::ASSIGN:
+            Next();
+            y = ParseExpr();
+            return make_shared<ast::AssignStmtNode>(x, y);
+        case token::Token::SEMICN:
+            Next();
+            return make_shared<ast::ExprStmtNode>(x);
+        default:
+            Error(pos_, "for simple stmt, after first expression, expect '=' or ';'");
+            return make_shared<ast::BadStmtNode>();
+    }
+}
+
+/**
+ * @brief ParseScanStmt is called for parse scan stmt.
+ * 
+ * @return shared_ptr<ast::StmtNode> 
+ */
+shared_ptr<ast::StmtNode> Parser::ParseScanStmt() {
+    if (tok_ != token::Token::SCANFTK) {
+        Error(pos_, "for begin of scanf stmt, expect 'scanf'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    if (tok_ != token::Token::LPARENT) {
+        Error(pos_, "for begin of scanf stmt, expect 'scanf('");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    auto scanf_stmt = make_shared<ast::ScanStmtNode>();
+    if (tok_ != token::Token::IDENFR) {
+        Error(pos_, "for expr of scanf stmt, expect indetifier");
+        return make_shared<ast::BadStmtNode>();
+    }
+    scanf_stmt->var_ = make_shared<ast::IdentNode>(lit_);
+
+    Next();
+
+    if (tok_ != token::Token::RPARENT) {
+        Error(pos_, "for end of scanf stmt, expect ')'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    if (tok_ != token::Token::SEMICN) {
+        Error(pos_, "for end of scanf stmt, expect ';'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    return scanf_stmt;
+}
+
+/**
+ * @brief ParsePrintfStmt is called for parse printf stmt.
+ * 
+ * @return shared_ptr<ast::StmtNode> 
+ */
+shared_ptr<ast::StmtNode> Parser::ParsePrintfStmt() {
+    if (tok_ != token::Token::PRINTFTK) {
+        Error(pos_, "for begin of printf stmt, expect 'printf'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    if (tok_ != token::Token::LPARENT) {
+        Error(pos_, "for begin of printf stmt, expect 'printf('");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    auto printf_stmt = make_shared<ast::PrintfStmtNode>();
+    if (tok_ != token::Token::STRCON) {
+        Error(pos_, "for expr of printf stmt, expect string");
+        return make_shared<ast::BadStmtNode>();
+    }
+    printf_stmt->fmt_ = lit_;
+
+    Next();
+
+    // Parse other args.
+    while (tok_ == token::Token::COMMA) {
+        Next();
+        printf_stmt->args_.push_back(ParseExpr());
+    }
+
+    if (tok_ != token::Token::RPARENT) {
+        Error(pos_, "for end of printf stmt, expect ')'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    if (tok_ != token::Token::SEMICN) {
+        Error(pos_, "for end of printf stmt, expect ';'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    return printf_stmt;
+}
+
+/**
+ * @brief ParseReturnStmt is called for parse return stmt.
+ * 
+ * @return shared_ptr<ast::StmtNode> 
+ */
+shared_ptr<ast::StmtNode> Parser::ParseReturnStmt() {
+    if (tok_ != token::Token::RETURNTK) {
+        Error(pos_, "for begin of return stmt, expect 'return'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    if (tok_ != token::Token::SEMICN) {
+        auto expr = ParseExpr();
+        if (tok_ != token::Token::SEMICN) {
+            Error(pos_, "for end of return stmt, expect ';'");
+            return make_shared<ast::BadStmtNode>();
+        }
+        Next();
+        return make_shared<ast::ReturnStmtNode>(expr);
+    }
+
+    if (tok_ != token::Token::SEMICN) {
+        Error(pos_, "for end of return stmt, expect ';'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+    return make_shared<ast::ReturnStmtNode>();
+}
+
+shared_ptr<ast::StmtNode> Parser::ParseSwitchStmt() {
+
+}
+
 
 // ParseVarDecl is called for parse variable decl.
 // In this function, we start from token 'const' or 'int / char'.
@@ -526,6 +691,43 @@ shared_ptr<ast::StmtNode> Parser::ParseWhileStmt() {
     return ret_while_stmt_node;
 }
 
+shared_ptr<ast::StmtNode> Parser::ParseForStmt() {
+    auto ret_for_stmt_node = make_shared<ast::ForStmtNode>();
+    if (tok_ != token::Token::FORTK) {
+        Error(pos_, "for begin of for statement, expect for");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    if (tok_ != token::Token::LPARENT) {
+        Error(pos_, "for begin of for statement, expect '('");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    if (tok_ != token::Token::SEMICN) {
+        ret_for_stmt_node->init_ = ParseStmt();
+    }
+
+    if (tok_ != token::Token::SEMICN) {
+        ret_for_stmt_node->cond_ = ParseStmt();
+    }
+
+    if (tok_ != token::Token::RPARENT) {
+        ret_for_stmt_node->step_ = ParseStmt();
+    }
+    Expect(token::Token::RPARENT);
+
+    ret_for_stmt_node->body_ = ParseBlockStmt();
+    if (tok_ != token::Token::RBRACE) {
+        Error(pos_, "for end of for statement, expect '}'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    return ret_for_stmt_node;
+}
+
 // ParseExpr is called for parse expression.
 // Cause those tokens will only used in <for/while/if> cond_.
 // When Calling this function, tok_ should be first token of expression.
@@ -704,7 +906,6 @@ shared_ptr<ast::ExprNode> Parser::ParseIndexExpr(const shared_ptr<ast::ExprNode>
         }
         Next();
 
-        
         if (tok_ != token::Token::LBRACK) {
             break;
         }

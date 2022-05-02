@@ -663,7 +663,7 @@ public:
 public:
     shared_ptr<StmtNode> init_{};
     shared_ptr<StmtNode> cond_{};
-    shared_ptr<ExprNode> step_{};
+    shared_ptr<StmtNode> step_{};
     shared_ptr<StmtNode> body_{}; 
 };
 

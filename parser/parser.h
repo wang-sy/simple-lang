@@ -73,10 +73,18 @@ private:
     // e.g. (int a, char b)
     shared_ptr<ast::FieldListNode> ParseFieldList();
 
+    // ParseSimpleStmt is called for parse simple statement.
+    shared_ptr<ast::StmtNode> ParseSimpleStmt();
+
     // ParseStmt is called for parse statement.
     shared_ptr<ast::StmtNode> ParseStmt();
     shared_ptr<ast::StmtNode> ParseIfStmt();
     shared_ptr<ast::StmtNode> ParseWhileStmt();
+    shared_ptr<ast::StmtNode> ParseForStmt();
+    shared_ptr<ast::StmtNode> ParseScanStmt();
+    shared_ptr<ast::StmtNode> ParsePrintfStmt();
+    shared_ptr<ast::StmtNode> ParseReturnStmt();
+    shared_ptr<ast::StmtNode> ParseSwitchStmt();
     shared_ptr<ast::ExprNode> ParseExpr();
     shared_ptr<ast::ExprNode> ParseParenExpr();
     shared_ptr<ast::ExprNode> ParseBinaryExpr(int prec);
