@@ -428,10 +428,82 @@ shared_ptr<ast::StmtNode> Parser::ParseReturnStmt() {
     return make_shared<ast::ReturnStmtNode>();
 }
 
+/**
+ * @brief ParseSwitchStmt is called for parse switch stmt.
+ * 
+ * @return shared_ptr<ast::StmtNode> 
+ */
 shared_ptr<ast::StmtNode> Parser::ParseSwitchStmt() {
+    if (tok_ != token::Token::SWITCHTK) {
+        Error(pos_, "for begin of switch stmt, expect 'switch'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
 
+    if (tok_ != token::Token::LPARENT) {
+        Error(pos_, "for begin of switch stmt, expect '('");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    auto switch_stmt = make_shared<ast::SwitchStmtNode>();
+    switch_stmt->cond_ = ParseExpr();
+
+    if (tok_ != token::Token::RPARENT) {
+        Error(pos_, "for end of switch stmt, expect ')'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    if (tok_ != token::Token::LBRACE) {
+        Error(pos_, "for begin of switch stmt, expect '{'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+    
+    while (tok_ == token::Token::CASETK || tok_ == token::Token::DEFAULTTK) {
+        switch_stmt->cases_.push_back(ParseCaseStmt());
+    }
+
+    if (tok_ != token::Token::RBRACE) {
+        Error(pos_, "for end of switch stmt, expect '}'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    return switch_stmt;
 }
 
+/**
+ * @brief ParseCaseStmt is called for parse case stmt.
+ * 
+ * @return shared_ptr<ast::StmtNode> 
+ */
+shared_ptr<ast::StmtNode> Parser::ParseCaseStmt() {
+    auto case_stmt_node = make_shared<ast::CaseStmtNode>();
+    if (tok_ == token::Token::CASETK) {
+        Next();
+        case_stmt_node->cond_ = ParseExpr();
+    } else if (tok_ == token::Token::DEFAULTTK) {
+        Next();
+        case_stmt_node->cond_ = nullptr;
+    } else {
+        Error(pos_, "for begin of case stmt, expect <case/default>");
+        return make_shared<ast::BadStmtNode>();
+    }
+
+    if (tok_ != token::Token::COLON) {
+        Error(pos_, "for end of case stmt, expect '<case expr/default>:'");
+        return make_shared<ast::BadStmtNode>();
+    }
+    Next();
+
+    while (tok_ != token::Token::CASETK && tok_ != token::Token::DEFAULTTK && tok_ != token::RBRACE) {
+        case_stmt_node->body_.push_back(ParseStmt());
+    }
+
+    return case_stmt_node;
+}
 
 // ParseVarDecl is called for parse variable decl.
 // In this function, we start from token 'const' or 'int / char'.

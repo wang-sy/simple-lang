@@ -85,6 +85,8 @@ private:
     shared_ptr<ast::StmtNode> ParsePrintfStmt();
     shared_ptr<ast::StmtNode> ParseReturnStmt();
     shared_ptr<ast::StmtNode> ParseSwitchStmt();
+    shared_ptr<ast::StmtNode> ParseCaseStmt();
+
     shared_ptr<ast::ExprNode> ParseExpr();
     shared_ptr<ast::ExprNode> ParseParenExpr();
     shared_ptr<ast::ExprNode> ParseBinaryExpr(int prec);

@@ -787,19 +787,21 @@ class SwitchStmtNode: public StmtNode {
 public:
     SwitchStmtNode() = default;
     ~SwitchStmtNode() override = default;
-    SwitchStmtNode(const shared_ptr<ExprNode>& cond, const shared_ptr<BlockStmtNode>& body) :
-            cond_(cond), body_(body) {};
+    SwitchStmtNode(const shared_ptr<ExprNode>& cond, const vector<shared_ptr<StmtNode>>& cases) :
+            cond_(cond), cases_(cases) {};
     NodeType Type() const override {return NodeType::SwitchStmt;};
     string ToString() const override {
         string ret = "<SwitchStmtNode>";
         ret += "<cond>" + (cond_ == nullptr ? "" : cond_->ToString()) + "</cond>";
-        ret += "<body>" + (body_ == nullptr ? "" : body_->ToString()) + "</body>";
+        for (auto stmt: cases_) {
+            ret += "<case>" + (stmt == nullptr ? "" : stmt->ToString()) + "</case>";
+        }
         ret += "</SwitchStmtNode>";
         return ret;
     }
 public:
     shared_ptr<ExprNode> cond_{};
-    shared_ptr<BlockStmtNode> body_{}; // case only.
+    vector<shared_ptr<StmtNode>> cases_{}; // case only.
 };
 
 // ScanStmt represents a scan statement.
