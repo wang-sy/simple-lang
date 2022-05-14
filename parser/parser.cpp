@@ -369,18 +369,15 @@ shared_ptr<ast::StmtNode> Parser::ParsePrintfStmt() {
     Next();
 
     auto printf_stmt = make_shared<ast::PrintfStmtNode>();
-    if (tok_ != token::Token::STRCON) {
-        Error(pos_, "for expr of printf stmt, expect string");
-        return make_shared<ast::BadStmtNode>();
-    }
-    printf_stmt->fmt_ = lit_;
-
-    Next();
 
     // Parse other args.
-    while (tok_ == token::Token::COMMA) {
-        Next();
+    while (tok_ != token::Token::RPARENT) {
         printf_stmt->args_.push_back(ParseExpr());
+        if (tok_ == token::Token::RPARENT) {
+            break;
+        }
+
+        Next();
     }
 
     if (tok_ != token::Token::RPARENT) {
@@ -596,17 +593,8 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
     }
     Next();
 
-    if (tok_ == token::Token::INTCON || tok_ == token::Token::CHARCON) {
-        single_decl_node->val_ = make_shared<ast::BasicLitNode>(tok_, lit_);
-    } else if (tok_ == token::Token::IDENFR) {
-        single_decl_node->val_ = make_shared<ast::IdentNode>(lit_);
-    } else {
-        Error(pos_, "var define should be <int/char> ident = <int/char/identfr>;");
-        return make_shared<ast::BadDeclNode>();
-    }
+    single_decl_node->val_ = ParseExpr();
     
-    // Point to next token.
-    Next();
     return single_decl_node;
 }
 
