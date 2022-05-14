@@ -826,11 +826,10 @@ class PrintfStmtNode: public StmtNode {
 public:
     PrintfStmtNode() = default;
     ~PrintfStmtNode() override = default;
-    PrintfStmtNode(const string& fmt, const vector<shared_ptr<ExprNode>>& args) :fmt_(fmt), args_(args) {};
+    PrintfStmtNode(const vector<shared_ptr<ExprNode>>& args) :args_(args) {};
     NodeType Type() const override {return NodeType::PrintfStmt;};
     string ToString() const override {
         string ret = "<PrintfStmtNode>";
-        ret += "<fmt>" + fmt_ + "</fmt>";
         for (auto arg: args_) {
             ret += "<arg>" + (arg == nullptr ? "" : arg->ToString()) + "</arg>";
         }
@@ -838,7 +837,6 @@ public:
         return ret;
     }
 public:
-    string fmt_;
     vector<shared_ptr<ExprNode>> args_;
 };
 

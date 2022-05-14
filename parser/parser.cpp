@@ -7,6 +7,32 @@
 
 // Helper function to parse ast.
 
+const string kConstBlock = "<常量说明>";
+const string kConstDecl = "<常量定义>";
+const string kStringLit = "<字符串>";
+const string kDeclHeader = "<声明头部>";
+const string kConstLit = "<常量>";
+const string kVarDecl = "<变量说明>";
+
+const string kUnsignedNumber = "<无符号整数>";
+const string kNumber = "<整数>";
+const string kMainFunction = "<主函数>";
+const string kParamList = "<参数表>";
+const string kNoVoidFuncDecl = "<有返回值函数定义>";
+const string kVoidFuncDecl = "<无返回值函数定义>";
+
+const string kMultiOperation = "<乘法运算符>";
+
+const string kStmt = "<语句>";
+const string kStmtList = "<语句列>";
+const string kBlockStmt = "<复合语句>";
+const string kPrintfStmt = "<写语句>";
+
+const string kExpr = "<表达式>";
+const string kItem = "<项>";
+const string kOperand = "<因子>";
+
+
 // NewBasicTypeNode is called for return basic type node.
 shared_ptr<ast::TypeNode> NewBasicTypeNode(token::Token tok) {
     if (tok == token::Token::CHARTK) {
@@ -84,6 +110,12 @@ int Parser::Expect(token::Token tok) {
 // Next advance to the next token.
 void Parser::Next() {
     scanner_->Scan(&pos_, &tok_, &lit_);
+    string token_name = token::GetTokenName(tok_);
+    if (tok_ == token::Token::STRCON || tok_ == token::Token::CHARCON) {
+        cout << token_name << " " << lit_.substr(1, lit_.size() - 2) << endl;
+    } else {
+        cout << token_name << " " << lit_ << endl;
+    }
 }
 
 // ParserDecl is called for parse decl.
@@ -249,40 +281,66 @@ shared_ptr<ast::StmtNode> Parser::ParseBlockStmt() {
 }
 
 shared_ptr<ast::StmtNode> Parser::ParseStmt() {
-    shared_ptr<ast::StmtNode> stmt_node;
+    shared_ptr<ast::StmtNode> stmt_node = make_shared<ast::BadStmtNode>();
+
+
     switch (tok_) {
         case token::Token::CONSTTK:
         case token::Token::INTTK:
         case token::Token::CHARTK:
-            return make_shared<ast::DeclStmtNode>(ParseVarDecl());
+            stmt_node = make_shared<ast::DeclStmtNode>(ParseVarDecl());
+            break;
         case token::Token::IDENFR:
-            return ParseSimpleStmt();
+            stmt_node = ParseSimpleStmt();
+            break;
         case token::Token::IFTK:
-            return ParseIfStmt();
+            stmt_node = ParseIfStmt();
+            break;
         case token::Token::WHILETK:
-            return ParseWhileStmt();
+            stmt_node = ParseWhileStmt();
+            break;
         case token::Token::SEMICN:
             Next();
-            return make_shared<ast::EmptyStmtNode>();
+            stmt_node = make_shared<ast::EmptyStmtNode>();
+            break;
         case token::Token::FORTK:
-            return ParseForStmt();
+            stmt_node = ParseForStmt();
+            break;
         case token::Token::LBRACE:
             stmt_node = ParseBlockStmt();
             Expect(token::Token::RBRACE);
-            return stmt_node;
+            stmt_node = stmt_node;
+            break;
         case token::Token::PRINTFTK:
-            return ParsePrintfStmt();
+            stmt_node = ParsePrintfStmt();
+            break;
         case token::Token::SCANFTK:
-            return ParseScanStmt();
+            stmt_node = ParseScanStmt();
+            break;
         case token::Token::SWITCHTK:
-            return ParseSwitchStmt();
+            stmt_node = ParseSwitchStmt();
+            break;
         case token::Token::RETURNTK:
-            return ParseReturnStmt();
+            stmt_node = ParseReturnStmt();
+            break;
         default:
-            return make_shared<ast::BadStmtNode>();
+            stmt_node = make_shared<ast::BadStmtNode>();
+            break;
+    }
+    
+    cout << "StmtNodeType is "<< stmt_node->Type() << endl;
+    cout << "Want type is " << ast::VarDecl << endl;
+    if (stmt_node->Type() == ast::VarDecl) {
+        auto var_decl_node = dynamic_pointer_cast<ast::VarDeclNode>(stmt_node);
+        auto first_singal_var_decl_node = dynamic_pointer_cast<ast::SingleVarDeclNode>(var_decl_node->decls_.front());
+        if(!first_singal_var_decl_node->is_const_) {
+            cout << kVarDecl << endl;
+        }
+
+        cout << stmt_node->ToString() << endl;
     }
 
-    return make_shared<ast::BadStmtNode>();
+    return stmt_node;
 }
 
 /**
@@ -369,18 +427,13 @@ shared_ptr<ast::StmtNode> Parser::ParsePrintfStmt() {
     Next();
 
     auto printf_stmt = make_shared<ast::PrintfStmtNode>();
-    if (tok_ != token::Token::STRCON) {
-        Error(pos_, "for expr of printf stmt, expect string");
-        return make_shared<ast::BadStmtNode>();
-    }
-    printf_stmt->fmt_ = lit_;
-
-    Next();
-
-    // Parse other args.
-    while (tok_ == token::Token::COMMA) {
-        Next();
+    while (tok_ != token::Token::RPARENT) {
         printf_stmt->args_.push_back(ParseExpr());
+        if (tok_ == token::Token::COMMA) {
+            Next();
+        } else {
+            break;
+        }
     }
 
     if (tok_ != token::Token::RPARENT) {
@@ -596,17 +649,8 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
     }
     Next();
 
-    if (tok_ == token::Token::INTCON || tok_ == token::Token::CHARCON) {
-        single_decl_node->val_ = make_shared<ast::BasicLitNode>(tok_, lit_);
-    } else if (tok_ == token::Token::IDENFR) {
-        single_decl_node->val_ = make_shared<ast::IdentNode>(lit_);
-    } else {
-        Error(pos_, "var define should be <int/char> ident = <int/char/identfr>;");
-        return make_shared<ast::BadDeclNode>();
-    }
+    single_decl_node->val_ = ParseExpr();
     
-    // Point to next token.
-    Next();
     return single_decl_node;
 }
 

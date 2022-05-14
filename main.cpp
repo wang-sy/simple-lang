@@ -83,7 +83,7 @@ void ParsingMain() {
 
     cout << ast_file.ToString() << endl;
 
-    parser.ReportErrors();
+    //parser.ReportErrors();
 }
 
 int main() {

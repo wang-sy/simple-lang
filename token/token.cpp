@@ -54,7 +54,7 @@ const static map<Token, string> token_names{
     {LBRACE, "LBRACE"},  // {
     {RBRACE, "RBRACE"},  // }
 
-    {END_OF_FILE, "END_OF_FILE"}, // end of file.
+    {END_OF_FILE, "EOF"}, // end of file.
 };
 
 const static map<Token, string> tokens {
