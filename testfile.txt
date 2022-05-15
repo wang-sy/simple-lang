@@ -1,34 +1,48 @@
-const int PI = 3;
-int _global = 233;
+void main()
+{
+    int N[2][4] = {{1,2,3,4},{5,6,7,8}};
+    int i, j;
+    if (N[0][0] == 1)
+    {
+        printf("18231210");
+    }
 
-void main() {
-	printf(18231051);
-	printf("Test case 2: logistic, conditional, switch & loop expressions.");
-	if (_global == 114514) {
-		printf("Branch 1, should not enter this branch.");
-	} else {
-		if (_global >= 222) printf("Branch 2, should enter this branch.");
-		if (_global <= 123) printf("Branch 3, should not enter this branch.");
-		else if (_global != -233) printf("Branch 4, should enter this branch.");
+    for (i = 0; i < 2; i=i+1)
+    {
+        for (j = 0; j < 4; j=j+1)
+        {
+            switch (N[i][j])
+            {
+            case 1:
+                printf(1);
+            case 2:
+                printf(2);
+            case 3:
+                printf(3);
+            case 4:
+                printf(4);
+            case 5:
+                printf(5);
+            case 6:
+                printf(6);
+            case 7:
+                printf(7);
+            default:
+                printf(8);
+            }
+        }
+    }
+
+    switch (N[0][0])
+    {
+        case 1:
+            N[0][0] = 0;
+        default:
+            N[0][0] = 1;
 	}
-	while (_global < 255) {
-		printf(_global);
-		_global = _global + 3;
-	}
-	for (_global = 2333; _global > 233; _global = _global - 233) printf(_global);
-	{
-		
-	}
-	{;}{_global = 1;}
-	switch(PI) {
-		case 1: _global = _global + 10;
-		default: _global = _global + 100;
-	}
-	switch(PI) {
-		case 2: _global = _global + 1000;
-		case 3: _global = _global + 10000;
-		case 4: printf("Fallthrough, should not print this");
-		default:;
-	}
-	printf(_global);
+
+    if (N[0][0] != 2)
+    {
+        printf("finish");
+    }
 }
