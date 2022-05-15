@@ -402,7 +402,7 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
         if(!first_singal_var_decl_node->is_const_) {
             cout << kVarDecl << endl;
         }
-    } else {
+    } else if (stmt_node->Type() != ast::DeclStmt) {
         cout << kStmt << endl;
     }
 
@@ -710,6 +710,8 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
                 return 1;
             }
 
+            cout << kUnsignedNumber << endl;
+
             if (tok_ != token::Token::RBRACK) {
                 Error(pos_, "for array dimension, expect ]");
                 return 1;
@@ -749,8 +751,32 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
     Next();
 
     single_decl_node->val_ = ParseExpr();
-    if (!is_const) cout << kVarSingleWithAssignDecl << endl;
-    
+    if (!is_const) {
+        // not const, print var decl.
+        // is const, check result.
+        if (single_decl_node->val_->Type() == ast::UnaryExpr) {
+            cout << kUnsignedNumber << endl;
+            cout << kNumber << endl;
+        } else {
+            if (dynamic_pointer_cast<ast::BasicLitNode>(single_decl_node->val_)->tok_ == token::Token::INTCON) {
+                cout << kUnsignedNumber << endl;
+                cout << kNumber << endl;
+            }
+        }
+        cout << kConstLit << endl;
+        cout << kVarSingleWithAssignDecl << endl;
+    } else {
+        // is const, check result.
+        if (single_decl_node->val_->Type() == ast::UnaryExpr) {
+            cout << kUnsignedNumber << endl;
+            cout << kNumber << endl;
+        } else {
+            if (dynamic_pointer_cast<ast::BasicLitNode>(single_decl_node->val_)->tok_ == token::Token::INTCON) {
+                cout << kUnsignedNumber << endl;
+                cout << kNumber << endl;
+            }
+        }
+    }
     return single_decl_node;
 }
 
@@ -767,6 +793,10 @@ shared_ptr<ast::ExprNode> Parser::ParseCompositeLit(token::Token decl_type) {
     Expect(token::Token::LBRACE);
     auto get_item = [&]() -> shared_ptr<ast::ExprNode> {
         if (tok_ == token::Token::INTCON || tok_ == token::Token::CHARCON) {
+            if (tok_ == token::Token::INTCON) {
+                cout << kUnsignedNumber << endl;
+                cout << kNumber << endl;
+            }
             return make_shared<ast::BasicLitNode>(tok_, lit_);
         }
 
@@ -784,6 +814,7 @@ shared_ptr<ast::ExprNode> Parser::ParseCompositeLit(token::Token decl_type) {
 
         if (tok_ == token::Token::INTCON) {
             unary_expr_node->x_ = make_shared<ast::BasicLitNode>(tok_, lit_);
+            cout << kNumber << endl;
             return unary_expr_node;
         }
         if (tok_ == token::Token::IDENFR) {
@@ -804,6 +835,7 @@ shared_ptr<ast::ExprNode> Parser::ParseCompositeLit(token::Token decl_type) {
             case token::Token::MINU:
             case token::Token::IDENFR:
                 current_composite_lit_node->items_.push_back(get_item());
+                cout << kConstLit << endl;
                 break;
             case token::Token::COMMA:
                 break;
