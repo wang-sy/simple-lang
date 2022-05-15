@@ -1,39 +1,32 @@
-CHARTK char
-IDENFR a
-ASSIGN =
-CHARCON s
-<常量>
-<变量定义及初始化>
-<变量定义>
-SEMICN ;
-<变量说明>
 VOIDTK void
 MAINTK main
 LPARENT (
 RPARENT )
 LBRACE {
 INTTK int
-IDENFR zer
+IDENFR temp
 ASSIGN =
-INTCON 5
+INTCON 1000
 <无符号整数>
 <整数>
 <常量>
 <变量定义及初始化>
 <变量定义>
 SEMICN ;
-CHARTK char
-IDENFR str
-ASSIGN =
-CHARCON f
-<常量>
-<变量定义及初始化>
+INTTK int
+IDENFR i
+<变量定义无初始化>
+<变量定义>
+SEMICN ;
+INTTK int
+IDENFR ans
+<变量定义无初始化>
 <变量定义>
 SEMICN ;
 <变量说明>
 PRINTFTK printf
 LPARENT (
-STRCON 18231194
+STRCON 18373085
 <字符串>
 RPARENT )
 <写语句>
@@ -41,14 +34,12 @@ SEMICN ;
 <语句>
 IFTK if
 LPARENT (
-INTCON 2
-<无符号整数>
-<整数>
+IDENFR temp
 <因子>
 <项>
 <表达式>
-GRE >
-INTCON 1
+LSS <
+INTCON 1000
 <无符号整数>
 <整数>
 <因子>
@@ -56,61 +47,33 @@ INTCON 1
 <表达式>
 <条件>
 RPARENT )
-LBRACE {
 PRINTFTK printf
 LPARENT (
-STRCON 1
+STRCON temp<1000
 <字符串>
 RPARENT )
 <写语句>
 SEMICN ;
 <语句>
-<语句列>
-RBRACE }
-<语句>
-<条件语句>
-<语句>
-IFTK if
-LPARENT (
-INTCON 2
-<无符号整数>
-<整数>
-<因子>
-<项>
-<表达式>
-NEQ !=
-INTCON 1
-<无符号整数>
-<整数>
-<因子>
-<项>
-<表达式>
-<条件>
-RPARENT )
-LBRACE {
+ELSETK else
 PRINTFTK printf
 LPARENT (
-STRCON 2
+STRCON temp>=1000
 <字符串>
 RPARENT )
 <写语句>
 SEMICN ;
 <语句>
-<语句列>
-RBRACE }
-<语句>
 <条件语句>
 <语句>
 IFTK if
 LPARENT (
-INTCON 3
-<无符号整数>
-<整数>
+IDENFR temp
 <因子>
 <项>
 <表达式>
 LEQ <=
-INTCON 4
+INTCON 1000
 <无符号整数>
 <整数>
 <因子>
@@ -118,30 +81,33 @@ INTCON 4
 <表达式>
 <条件>
 RPARENT )
-LBRACE {
 PRINTFTK printf
 LPARENT (
-STRCON 3
+STRCON temp<=1000
 <字符串>
 RPARENT )
 <写语句>
 SEMICN ;
 <语句>
-<语句列>
-RBRACE }
+ELSETK else
+PRINTFTK printf
+LPARENT (
+STRCON temp>1000
+<字符串>
+RPARENT )
+<写语句>
+SEMICN ;
 <语句>
 <条件语句>
 <语句>
 IFTK if
 LPARENT (
-INTCON 2
-<无符号整数>
-<整数>
+IDENFR temp
 <因子>
 <项>
 <表达式>
-EQL ==
-INTCON 2
+GRE >
+INTCON 1000
 <无符号整数>
 <整数>
 <因子>
@@ -149,107 +115,126 @@ INTCON 2
 <表达式>
 <条件>
 RPARENT )
-LBRACE {
 PRINTFTK printf
 LPARENT (
-STRCON 4
+STRCON temp>1000
 <字符串>
 RPARENT )
 <写语句>
 SEMICN ;
 <语句>
-<语句列>
-RBRACE }
+ELSETK else
+PRINTFTK printf
+LPARENT (
+STRCON temp<=1000
+<字符串>
+RPARENT )
+<写语句>
+SEMICN ;
 <语句>
 <条件语句>
 <语句>
-IDENFR zer
-ASSIGN =
+IFTK if
 LPARENT (
-PLUS +
+IDENFR temp
+<因子>
+<项>
+<表达式>
+GEQ >=
+INTCON 1000
+<无符号整数>
+<整数>
+<因子>
+<项>
+<表达式>
+<条件>
+RPARENT )
+PRINTFTK printf
+LPARENT (
+STRCON temp>=1000
+<字符串>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+ELSETK else
+PRINTFTK printf
+LPARENT (
+STRCON temp<1000
+<字符串>
+RPARENT )
+<写语句>
+SEMICN ;
+<语句>
+<条件语句>
+<语句>
+SCANFTK scanf
+LPARENT (
+IDENFR i
+RPARENT )
+<读语句>
+SEMICN ;
+<语句>
+FORTK for
+LPARENT (
+IDENFR temp
+ASSIGN =
+IDENFR i
+<因子>
+<项>
+<表达式>
+SEMICN ;
+IDENFR temp
+<因子>
+<项>
+<表达式>
+GRE >
+INTCON 0
+<无符号整数>
+<整数>
+<因子>
+<项>
+<表达式>
+<条件>
+SEMICN ;
+IDENFR temp
+ASSIGN =
+IDENFR temp
+MINU -
+INTCON 1
+<无符号整数>
+<步长>
+RPARENT )
+LBRACE {
+IDENFR ans
+ASSIGN =
+MINU -
+IDENFR temp
+<因子>
+DIV /
 INTCON 1
 <无符号整数>
 <整数>
 <因子>
 <项>
 <表达式>
-RPARENT )
-<因子>
-MULT *
-IDENFR zer
-<因子>
-MULT *
-CHARCON a
-<因子>
-<项>
-<表达式>
-<赋值语句>
-SEMICN ;
-<语句>
-IDENFR zer
-ASSIGN =
-MINU -
-INTCON 7
-<无符号整数>
-<整数>
-<因子>
-MULT *
-LPARENT (
-INTCON 7
-<无符号整数>
-<整数>
-<因子>
-MULT *
-IDENFR zer
-<因子>
-<项>
-<表达式>
-RPARENT )
-<因子>
-<项>
-<表达式>
 <赋值语句>
 SEMICN ;
 <语句>
 PRINTFTK printf
 LPARENT (
-STRCON 5
-<字符串>
+IDENFR ans
+<因子>
+<项>
+<表达式>
 RPARENT )
 <写语句>
 SEMICN ;
 <语句>
-PRINTFTK printf
-LPARENT (
-STRCON 6
-<字符串>
-RPARENT )
-<写语句>
-SEMICN ;
+<语句列>
+RBRACE }
 <语句>
-PRINTFTK printf
-LPARENT (
-STRCON 7
-<字符串>
-RPARENT )
-<写语句>
-SEMICN ;
-<语句>
-PRINTFTK printf
-LPARENT (
-STRCON 8
-<字符串>
-RPARENT )
-<写语句>
-SEMICN ;
-<语句>
-PRINTFTK printf
-LPARENT (
-STRCON 9
-<字符串>
-RPARENT )
-<写语句>
-SEMICN ;
+<循环语句>
 <语句>
 <语句列>
 <复合语句>
