@@ -125,4 +125,9 @@ private:
     shared_ptr<Scanner> scanner_;
     shared_ptr<token::File> file_;
     vector<ParserError> errors_;
+
+    // only for output.
+    int first_next_output;
+    vector<shared_ptr<ast::DeclNode>> decls_;
+    bool in_return;
 };

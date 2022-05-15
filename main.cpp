@@ -41,7 +41,6 @@ void LexicalAnalysisMain() {
     string txt = GetInputFile(test_file->name);
     test_file->size = (int)txt.size();
 
-
     auto err_handler = make_shared<StdErrHandler>();
     Scanner scanner(test_file, txt, err_handler);
 

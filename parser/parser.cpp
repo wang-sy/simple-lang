@@ -7,28 +7,45 @@
 
 // Helper function to parse ast.
 
-const string kConstBlock = "<常量说明>";
-const string kConstDecl = "<常量定义>";
-const string kStringLit = "<字符串>";
-const string kDeclHeader = "<声明头部>";
-const string kConstLit = "<常量>";
-const string kVarDecl = "<变量说明>";
+const string kProgram = "<程序>";
 
-const string kUnsignedNumber = "<无符号整数>";
-const string kNumber = "<整数>";
+const string kConstSingleDecl = "<常量定义>";
+const string kConstDecl = "<常量说明>";
+// 变量说明是程序的第二段，是由多个变量定义构成的.
+const string kVarDecl = "<变量说明>";
+const string kVarSingleDecl = "<变量定义>";
+const string kVarSingleWithAssignDecl = "<变量定义及初始化>";
+const string kVarSingleWithoutAssignDecl = "<变量定义无初始化>";
+// func decls.
 const string kMainFunction = "<主函数>";
+const string kDeclHeader = "<声明头部>";
 const string kParamList = "<参数表>";
 const string kNoVoidFuncDecl = "<有返回值函数定义>";
 const string kVoidFuncDecl = "<无返回值函数定义>";
 
+// stmts.
+const string kStmt = "<语句>";
+const string kPrintfStmt = "<写语句>";
+const string kScanfStmt= "<读语句>";
+const string kReturnStmt = "<返回语句>";
+const string kAssignStmt = "<赋值语句>";
+const string kBlockStmt = "<语句列>";
+const string kFuncBodyStmt = "<复合语句>";
+const string kCallWithReturn = "<有返回值函数调用语句>";
+const string kCallWithOutReturn = "<无返回值函数调用语句>";
+const string kCallParamList = "<值参数表>";
+
+// exprs.
+const string kExpr = "<表达式>";
+const string kStringLit = "<字符串>";
+const string kConstLit = "<常量>";
+
+const string kUnsignedNumber = "<无符号整数>";
+const string kNumber = "<整数>";
+
 const string kMultiOperation = "<乘法运算符>";
 
-const string kStmt = "<语句>";
-const string kStmtList = "<语句列>";
-const string kBlockStmt = "<复合语句>";
-const string kPrintfStmt = "<写语句>";
 
-const string kExpr = "<表达式>";
 const string kItem = "<项>";
 const string kOperand = "<因子>";
 
@@ -77,13 +94,14 @@ Parser::Parser(const shared_ptr<token::File> &file, const string &src, const sha
 
 // Parse the source code and return the corresponding ast file tree.
 ast::FileNode Parser::Parse() {
-    vector<shared_ptr<ast::DeclNode>> decls;
     while (tok_ != token::END_OF_FILE) {
-        decls.push_back(ParseDecl());
+        decls_.push_back(ParseDecl());
     }
 
+    cout << kProgram << endl;
+
     ast::FileNode ast_file_node;
-    ast_file_node.decl_.insert(ast_file_node.decl_.begin(), decls.begin(), decls.end());
+    ast_file_node.decl_.insert(ast_file_node.decl_.begin(), decls_.begin(), decls_.end());
 
     return ast_file_node;
 }
@@ -109,13 +127,18 @@ int Parser::Expect(token::Token tok) {
 
 // Next advance to the next token.
 void Parser::Next() {
-    scanner_->Scan(&pos_, &tok_, &lit_);
-    string token_name = token::GetTokenName(tok_);
-    if (tok_ == token::Token::STRCON || tok_ == token::Token::CHARCON) {
-        cout << token_name << " " << lit_.substr(1, lit_.size() - 2) << endl;
+    if (first_next_output != 23332333) {
+        first_next_output = 23332333;
     } else {
-        cout << token_name << " " << lit_ << endl;
+        string token_name = token::GetTokenName(tok_);
+        if (tok_ == token::Token::STRCON || tok_ == token::Token::CHARCON) {
+            cout << token_name << " " << lit_.substr(1, lit_.size() - 2) << endl;
+        } else {
+            cout << token_name << " " << lit_ << endl;
+        }
     }
+    scanner_->Scan(&pos_, &tok_, &lit_);
+    
 }
 
 // ParserDecl is called for parse decl.
@@ -143,15 +166,38 @@ shared_ptr<ast::DeclNode> Parser::ParseDecl() {
     }
     Next();
 
+    shared_ptr<ast::DeclNode> ret_node;
+
     if (tok_ == token::Token::LPARENT) {
         if (is_const) {
             Error(pos_, "const function result type not supported");
             return make_shared<ast::BadDeclNode>();
         }
-        return ParseFuncDecl(decl_pos, decl_type, name_pos, name);
+
+        // 有返回值的函数的定义，只有在int, char类型的函数时才会被视为声明头部，被输出.
+        // 主函数的声明头部也不被视为声明头部.
+        if (name != "main" && (decl_type == token::Token::INTTK || decl_type == token::Token::CHARTK)) {
+            cout << kDeclHeader << endl;
+        }
+        
+        ret_node = ParseFuncDecl(decl_pos, decl_type, name_pos, name);
+    } else {
+        ret_node = ParseVarDecl(decl_pos, is_const, decl_type, name_pos, name);
     }
 
-    return ParseVarDecl(decl_pos, is_const, decl_type, name_pos, name);
+    if (ret_node->Type() == ast::FuncDecl) {
+        auto func_decl_node = static_pointer_cast<ast::FuncDeclNode>(ret_node);
+        if (func_decl_node->name_->name_ == "main") {
+            // is main function => cout kMainFuncDecl.
+            cout << kMainFunction << endl;
+        } else if (func_decl_node->type_->Type() == ast::VoidType) {
+            cout << kVoidFuncDecl << endl;
+        } else {
+            cout << kNoVoidFuncDecl << endl;
+        }
+    }
+    
+    return ret_node;
 }
 
 // ParseFuncDecl is called for parse function decl.
@@ -163,10 +209,17 @@ shared_ptr<ast::DeclNode> Parser::ParseFuncDecl(int decl_pos, token::Token decl_
     
     // Get Params.
     func_decl_node->params_ = ParseFieldList();
+    if (name != "main") {
+        cout << kParamList << endl;
+    }
+    
     Expect(token::Token::RPARENT);
 
     // GetBody.
     func_decl_node->body_ = ParseBlockStmt();
+
+    cout << kFuncBodyStmt << endl;
+
     if (tok_ != token::Token::RBRACE) {
         Error(pos_, "for end of a function, expect }");
         return make_shared<ast::BadDeclNode>();
@@ -262,7 +315,19 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl(int decl_pos, bool is_const, toke
         Expect(token::Token::IDENFR);
     }
 
+    if (is_const) {
+        cout << kConstSingleDecl << endl;
+    } else {
+        cout << kVarSingleDecl << endl;
+    }
+
     Expect(token::Token::SEMICN);
+    
+    if (is_const) {
+        cout << kConstDecl << endl;
+    } else {
+        cout << kVarDecl << endl;
+    }
 
     return var_decl_node;
 }
@@ -276,6 +341,8 @@ shared_ptr<ast::StmtNode> Parser::ParseBlockStmt() {
     while(tok_ != token::Token::RBRACE) {
         stmt_list->stmts_.push_back(ParseStmt());
     }
+
+    cout << kBlockStmt << endl;
 
     return stmt_list;
 }
@@ -327,17 +394,16 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
             stmt_node = make_shared<ast::BadStmtNode>();
             break;
     }
+
     
-    cout << "StmtNodeType is "<< stmt_node->Type() << endl;
-    cout << "Want type is " << ast::VarDecl << endl;
     if (stmt_node->Type() == ast::VarDecl) {
         auto var_decl_node = dynamic_pointer_cast<ast::VarDeclNode>(stmt_node);
         auto first_singal_var_decl_node = dynamic_pointer_cast<ast::SingleVarDeclNode>(var_decl_node->decls_.front());
         if(!first_singal_var_decl_node->is_const_) {
             cout << kVarDecl << endl;
         }
-
-        cout << stmt_node->ToString() << endl;
+    } else {
+        cout << kStmt << endl;
     }
 
     return stmt_node;
@@ -356,6 +422,12 @@ shared_ptr<ast::StmtNode> Parser::ParseSimpleStmt() {
         case token::Token::ASSIGN:
             Next();
             y = ParseExpr();
+
+            cout << kExpr << endl;
+            cout << kAssignStmt << endl;
+
+            Expect(token::Token::SEMICN);
+
             return make_shared<ast::AssignStmtNode>(x, y);
         case token::Token::SEMICN:
             Next();
@@ -399,6 +471,8 @@ shared_ptr<ast::StmtNode> Parser::ParseScanStmt() {
     }
     Next();
 
+    cout << kScanfStmt << endl;
+
     if (tok_ != token::Token::SEMICN) {
         Error(pos_, "for end of scanf stmt, expect ';'");
         return make_shared<ast::BadStmtNode>();
@@ -426,9 +500,22 @@ shared_ptr<ast::StmtNode> Parser::ParsePrintfStmt() {
     }
     Next();
 
+    bool is_first = true;
+
     auto printf_stmt = make_shared<ast::PrintfStmtNode>();
     while (tok_ != token::Token::RPARENT) {
-        printf_stmt->args_.push_back(ParseExpr());
+        auto expr_node = ParseExpr();
+
+        printf_stmt->args_.push_back(expr_node);
+
+        if (expr_node->Type() == ast::BasicLit && is_first) {
+            cout << kStringLit << endl;
+        } else {
+            cout << kExpr << endl;
+        }
+
+        is_first = false;
+
         if (tok_ == token::Token::COMMA) {
             Next();
         } else {
@@ -441,6 +528,8 @@ shared_ptr<ast::StmtNode> Parser::ParsePrintfStmt() {
         return make_shared<ast::BadStmtNode>();
     }
     Next();
+
+    cout << kPrintfStmt << endl;
 
     if (tok_ != token::Token::SEMICN) {
         Error(pos_, "for end of printf stmt, expect ';'");
@@ -457,6 +546,7 @@ shared_ptr<ast::StmtNode> Parser::ParsePrintfStmt() {
  * @return shared_ptr<ast::StmtNode> 
  */
 shared_ptr<ast::StmtNode> Parser::ParseReturnStmt() {
+    in_return = true;
     if (tok_ != token::Token::RETURNTK) {
         Error(pos_, "for begin of return stmt, expect 'return'");
         return make_shared<ast::BadStmtNode>();
@@ -465,19 +555,26 @@ shared_ptr<ast::StmtNode> Parser::ParseReturnStmt() {
 
     if (tok_ != token::Token::SEMICN) {
         auto expr = ParseExpr();
+        cout << kReturnStmt << endl;
         if (tok_ != token::Token::SEMICN) {
             Error(pos_, "for end of return stmt, expect ';'");
+            in_return = false;
             return make_shared<ast::BadStmtNode>();
         }
         Next();
+        in_return = false;
         return make_shared<ast::ReturnStmtNode>(expr);
     }
 
+    cout << kReturnStmt << endl;
+
     if (tok_ != token::Token::SEMICN) {
         Error(pos_, "for end of return stmt, expect ';'");
+        in_return = false;
         return make_shared<ast::BadStmtNode>();
     }
     Next();
+    in_return = false;
     return make_shared<ast::ReturnStmtNode>();
 }
 
@@ -625,6 +722,7 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
 
     // only var name.
     if (tok_ == token::Token::SEMICN || tok_ == token::Token::COMMA) {
+        if (!is_const) cout << kVarSingleWithoutAssignDecl << endl;
         return single_decl_node;
     }
 
@@ -639,6 +737,7 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
         Expect(token::Token::ASSIGN);
 
         single_decl_node->val_ = ParseCompositeLit(decl_type);
+        if (!is_const) cout << kVarSingleWithAssignDecl << endl;
         return single_decl_node;
     }
 
@@ -650,6 +749,7 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
     Next();
 
     single_decl_node->val_ = ParseExpr();
+    if (!is_const) cout << kVarSingleWithAssignDecl << endl;
     
     return single_decl_node;
 }
@@ -750,7 +850,7 @@ shared_ptr<ast::StmtNode> Parser::ParseIfStmt() {
     ret_if_stmt_node->cond_ = ParseExpr();
 
     if (tok_ != token::Token::RPARENT) {
-        Error(pos_, "for begin of if statement, expect '('");
+        Error(pos_, "for end of if statement, expect ')'");
         return make_shared<ast::BadStmtNode>();
     }
     Next();
@@ -852,7 +952,9 @@ shared_ptr<ast::StmtNode> Parser::ParseForStmt() {
 //  - if (expr == expr')  :=> '=='
 //  - fake = foo + bar;   :=> ';'
 shared_ptr<ast::ExprNode> Parser::ParseExpr() {
-    return ParseBinaryExpr(token::kLowestPrecedence + 1);
+    auto ret_node = ParseBinaryExpr(token::kLowestPrecedence + 1);
+
+    return ret_node;
 }
 
 /**
@@ -909,7 +1011,28 @@ shared_ptr<ast::ExprNode> Parser::ParsePrimaryExpr() {
 
     // '(' function call.
     if (tok_ == token::Token::LPARENT) {
-        return ParseCallExpr(x);
+        auto ret_node = ParseCallExpr(x);
+        
+        // 精确输出是有返回值还是无返回值.
+        shared_ptr<ast::CallExprNode> call = dynamic_pointer_cast<ast::CallExprNode>(ret_node);
+        auto call_name_node = dynamic_pointer_cast<ast::IdentNode>(call->fun_);
+        auto call_name = call_name_node->name_;
+
+        // 找到被调用函数.
+        bool have_return = false;
+        for (auto& decl: decls_) {
+            if (decl->Type() == ast::FuncDecl) {
+                auto func_decl = dynamic_pointer_cast<ast::FuncDeclNode>(decl);
+                if (func_decl->name_->name_ == call_name) {
+                    have_return = func_decl->type_->Type() != ast::VoidType;
+                    break;
+                }
+            }
+        }
+
+        cout << (have_return ? kCallWithReturn : kCallWithOutReturn) << endl;
+
+        return ret_node;
     }
 
     // '[' => index.
@@ -947,6 +1070,9 @@ shared_ptr<ast::ExprNode> Parser::ParseOperand() {
         case token::Token::LPARENT:
             Next();
             ret = make_shared<ast::ParenExprNode>(ParseExpr());
+            if (in_return) {
+                cout << kExpr << endl;
+            }
             if (tok_ != token::Token::RPARENT) {
                 Error(pos_, "in operand start with '(', expect end with ')'");
                 return make_shared<ast::BadExprNode>();
@@ -979,11 +1105,15 @@ shared_ptr<ast::ExprNode> Parser::ParseCallExpr(const shared_ptr<ast::ExprNode>&
         auto arg_expr_node = ParseExpr();
         func_call_expr_node->args_.push_back(arg_expr_node);
 
+        cout << kExpr << endl;
+
         if (tok_ != token::Token::COMMA) {
             break;
         }
         Next();
     }
+
+    cout << kCallParamList << endl;
 
     if (tok_ != token::Token::RPARENT) {
         Error(pos_, "in function call, expect ')'");
@@ -1015,6 +1145,8 @@ shared_ptr<ast::ExprNode> Parser::ParseIndexExpr(const shared_ptr<ast::ExprNode>
     vector<shared_ptr<ast::ExprNode>> index_expr_nodes;
     while (true) {
         index_expr_nodes.push_back(ParseExpr());
+        
+        cout << kExpr << endl;
 
         if (tok_ != token::Token::RBRACK) {
             Error(pos_, "for end of array index, expect ]");
