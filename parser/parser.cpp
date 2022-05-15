@@ -34,6 +34,8 @@ const string kFuncBodyStmt = "<复合语句>";
 const string kCallWithReturn = "<有返回值函数调用语句>";
 const string kCallWithOutReturn = "<无返回值函数调用语句>";
 const string kCallParamList = "<值参数表>";
+const string kIfStmt = "<条件语句>";
+const string kIfCond = "<条件>";
 
 // exprs.
 const string kExpr = "<表达式>";
@@ -881,6 +883,8 @@ shared_ptr<ast::StmtNode> Parser::ParseIfStmt() {
 
     ret_if_stmt_node->cond_ = ParseExpr();
 
+    cout << kIfCond << endl;
+
     if (tok_ != token::Token::RPARENT) {
         Error(pos_, "for end of if statement, expect ')'");
         return make_shared<ast::BadStmtNode>();
@@ -903,6 +907,8 @@ shared_ptr<ast::StmtNode> Parser::ParseIfStmt() {
             Expect(token::Token::RBRACE);
         }
     }
+
+    cout << kIfStmt << endl;
 
     return ret_if_stmt_node;
 }
