@@ -73,7 +73,8 @@ void Parser::Error(int pos, const string& msg) {
 int Parser::Expect(token::Token tok) {
     int pos = pos_;
     if (tok_ != tok) {
-        cout << "ERROR:" << "expect" << token::GetTokenName(tok) << endl;;
+        cout << file_->GetPositionByOffset(pos).line << ":" << file_->GetPositionByOffset(pos).column << ": " 
+             << "Expect " << token::GetTokenName(tok) << ", but got " << token::GetTokenName(tok_) << endl;
         Error(pos, "expect " + token::GetTokenName(tok));
     }
 
@@ -117,7 +118,7 @@ shared_ptr<ast::DeclNode> Parser::ParseDecl() {
             return make_shared<ast::BadDeclNode>();
         }
         return ParseFuncDecl(decl_pos, decl_type, name_pos, name);
-    }
+    } 
 
     return ParseVarDecl(decl_pos, is_const, decl_type, name_pos, name);
 }
@@ -256,7 +257,9 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
         case token::Token::CHARTK:
             return make_shared<ast::DeclStmtNode>(ParseVarDecl());
         case token::Token::IDENFR:
-            return ParseSimpleStmt();
+            stmt_node = ParseSimpleStmt();
+            Expect(token::Token::SEMICN);
+            return stmt_node;
         case token::Token::IFTK:
             return ParseIfStmt();
         case token::Token::WHILETK:
@@ -267,6 +270,7 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
         case token::Token::FORTK:
             return ParseForStmt();
         case token::Token::LBRACE:
+            cout << "In ParseStmt, LBRACE" << endl;
             stmt_node = ParseBlockStmt();
             Expect(token::Token::RBRACE);
             return stmt_node;
@@ -287,7 +291,7 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
 
 /**
  * @brief ParseSimpleStmt is called for parse simple stmt.
- * 
+ * After process, tok_ should be ';'.
  * @return shared_ptr<ast::StmtNode> 
  */
 shared_ptr<ast::StmtNode> Parser::ParseSimpleStmt() {
@@ -300,7 +304,6 @@ shared_ptr<ast::StmtNode> Parser::ParseSimpleStmt() {
             y = ParseExpr();
             return make_shared<ast::AssignStmtNode>(x, y);
         case token::Token::SEMICN:
-            Next();
             return make_shared<ast::ExprStmtNode>(x);
         default:
             Error(pos_, "for simple stmt, after first expression, expect '=' or ';'");
@@ -369,15 +372,14 @@ shared_ptr<ast::StmtNode> Parser::ParsePrintfStmt() {
     Next();
 
     auto printf_stmt = make_shared<ast::PrintfStmtNode>();
-
-    // Parse other args.
     while (tok_ != token::Token::RPARENT) {
         printf_stmt->args_.push_back(ParseExpr());
-        if (tok_ == token::Token::RPARENT) {
+
+        if (tok_ == token::Token::COMMA) {
+            Next();
+        } else {
             break;
         }
-
-        Next();
     }
 
     if (tok_ != token::Token::RPARENT) {
@@ -594,7 +596,7 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
     Next();
 
     single_decl_node->val_ = ParseExpr();
-    
+
     return single_decl_node;
 }
 
@@ -694,26 +696,16 @@ shared_ptr<ast::StmtNode> Parser::ParseIfStmt() {
     ret_if_stmt_node->cond_ = ParseExpr();
 
     if (tok_ != token::Token::RPARENT) {
-        Error(pos_, "for begin of if statement, expect '('");
+        Error(pos_, "for end of if statement, expect ')'");
         return make_shared<ast::BadStmtNode>();
     }
     Next();
 
-    ret_if_stmt_node->body_ = ParseBlockStmt();
-    if (tok_ != token::Token::RBRACE) {
-        Error(pos_, "for end of if statement, expect '}'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    ret_if_stmt_node->body_ = ParseStmt();
 
     if (tok_ == token::Token::ELSETK) {
         Next();
-        if (tok_ == token::Token::IFTK) {
-            ret_if_stmt_node->else_ = ParseIfStmt();
-        } else {
-            ret_if_stmt_node->else_ = ParseBlockStmt();
-            Expect(token::Token::RBRACE);
-        }
+        ret_if_stmt_node->else_ = ParseStmt();
     }
 
     return ret_if_stmt_node;
@@ -766,24 +758,21 @@ shared_ptr<ast::StmtNode> Parser::ParseForStmt() {
     Next();
 
     if (tok_ != token::Token::SEMICN) {
-        ret_for_stmt_node->init_ = ParseStmt();
+        ret_for_stmt_node->init_ = ParseSimpleStmt();
+        Expect(token::Token::SEMICN);
     }
 
     if (tok_ != token::Token::SEMICN) {
-        ret_for_stmt_node->cond_ = ParseStmt();
+        ret_for_stmt_node->init_ = ParseSimpleStmt();
+        Expect(token::Token::SEMICN);
     }
 
     if (tok_ != token::Token::RPARENT) {
-        ret_for_stmt_node->step_ = ParseStmt();
+        ret_for_stmt_node->step_ = ParseSimpleStmt();
     }
     Expect(token::Token::RPARENT);
 
-    ret_for_stmt_node->body_ = ParseBlockStmt();
-    if (tok_ != token::Token::RBRACE) {
-        Error(pos_, "for end of for statement, expect '}'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    ret_for_stmt_node->body_ = ParseStmt();
 
     return ret_for_stmt_node;
 }
