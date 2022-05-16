@@ -1,0 +1,12 @@
+void fun(int x){
+  _return = 10;
+}
+
+void main(){
+  a=1;
+  printf(x);
+}
+
+
+
+
