@@ -270,7 +270,6 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
         case token::Token::FORTK:
             return ParseForStmt();
         case token::Token::LBRACE:
-            cout << "In ParseStmt, LBRACE" << endl;
             stmt_node = ParseBlockStmt();
             Expect(token::Token::RBRACE);
             return stmt_node;
