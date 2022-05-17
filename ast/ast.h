@@ -160,12 +160,21 @@ enum NodeType {
 // All node types implement the Node interface.
 class Node {
 public:
+    explicit Node(const token::Position& pos) :pos_(pos) {}
+
+    Node() = default;
+
     // Get type of node.
     virtual NodeType Type() const = 0;
+    
+    // Pos get position of first character belonging to the node.
+    virtual token::Position Pos() const { return pos_; }
 
     virtual string ToString() const = 0;
 
     virtual ~Node() = default;
+public:
+    token::Position pos_;
 };
 
 // TypeNode define type nodes.
@@ -173,41 +182,69 @@ public:
 // type nodes can also decl array.
 class TypeNode: public Node {
 public:
+    explicit TypeNode(const token::Position& pos) : Node(pos) {}
     TypeNode() = default;
     ~TypeNode() override = default;
-    virtual NodeType Type() const override { return NodeType::Type; }
 
-    virtual string ToString() const override {return "<TypeNode/>";}
+    NodeType Type() const override { return NodeType::Type; }
+
+    string ToString() const override {
+        string ret = "<TypeNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</TypeNode>";
+        return ret;
+    }
 };
 
 // DeclNode All declaration nodes implement the Decl interface.
 class DeclNode: public Node {
 public:
-    virtual ~DeclNode() override = default;
+    explicit DeclNode(const token::Position& pos) : Node(pos) {}
 
-    virtual NodeType Type() const override {return NodeType::Decl;};
+    ~DeclNode() override = default;
+
+    NodeType Type() const override {return NodeType::Decl;};
     
-    virtual string ToString() const override {return "<DeclNode/>";}
+    string ToString() const override {
+        string ret = "<DeclNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</DeclNode>";
+        return ret;
+    }
 };
 
 // ExprNode All expression nodes implement the Expr interface.
 class ExprNode : public Node {
 public:
+    explicit ExprNode(const token::Position& pos) : Node(pos) {}
+
     ~ExprNode() override = default;
 
     NodeType Type() const override { return NodeType::Expr; };
 
-    virtual string ToString() const override {return "<ExprNode/>";}
+    string ToString() const override {
+        string ret = "<ExprNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</ExprNode>";
+        return ret;
+    }
 };
 
 // StmtNode All statement nodes implement the Stmt interface.
 class StmtNode: public Node {
 public:
+    explicit StmtNode(const token::Position& pos) : Node(pos) {}
+
     ~StmtNode() override = default;
 
     NodeType Type() const override {return NodeType::Stmt;};
 
-    virtual string ToString() const override {return "<StmtNode/>";}
+    string ToString() const override {
+        string ret = "<StmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</StmtNode>";
+        return ret;
+    }
 };
 
 // ====================================================================
@@ -215,51 +252,78 @@ public:
 // ====================================================================
 class BadTypeNode: public TypeNode {
 public:
+    explicit BadTypeNode(const token::Position& pos) : TypeNode(pos) {}
     BadTypeNode() = default;
     ~BadTypeNode() override = default;
     NodeType Type() const override { return NodeType::BadType; };
-    string ToString() const override {return "<BadTypeNode/>";}
+    string ToString() const override {
+        string ret = "<BadTypeNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</BadTypeNode>";
+        return ret;
+    }
 };
 
 class VoidTypeNode : public TypeNode {
 public:
+    explicit VoidTypeNode(const token::Position& pos) : TypeNode(pos) {}
     VoidTypeNode() = default;
     ~VoidTypeNode() override = default;
     NodeType Type() const override { return NodeType::VoidType; };
-    string ToString() const override {return "<VoidTypeNode/>";}
+    string ToString() const override {
+        string ret = "<VoidTypeNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</VoidTypeNode>";
+        return ret;
+    }
 };
 
 class CharTypeNode : public TypeNode {
 public:
+    explicit CharTypeNode(const token::Position& pos) : TypeNode(pos) {}
     CharTypeNode() = default;
     ~CharTypeNode() override = default;
     NodeType Type() const override { return NodeType::CharType; };
-    string ToString() const override {return "<CharTypeNode/>";}
+    string ToString() const override {
+        string ret = "<CharTypeNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</CharTypeNode>";
+        return ret;
+    }
 };
 
 class IntTypeNode : public TypeNode {
 public:
+    explicit IntTypeNode(const token::Position& pos) : TypeNode(pos) {}
     IntTypeNode() = default;
     ~IntTypeNode() override = default;
     NodeType Type() const override { return NodeType::IntType; };
-    string ToString() const override {return "<IntTypeNode/>";}
+    string ToString() const override {
+        string ret = "<IntTypeNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</IntTypeNode>";
+        return ret;
+    }
 };
 
 class ArrayTypeNode : public TypeNode {
 public:
     ArrayTypeNode() = default;
     ~ArrayTypeNode() override = default;
-    ArrayTypeNode(int size, const shared_ptr<TypeNode>& item) :size_(size), item_(item) {};
+    explicit ArrayTypeNode(const token::Position& pos) :TypeNode(pos) {};
+    ArrayTypeNode(const token::Position& pos, int size, const shared_ptr<TypeNode>& item) 
+        : TypeNode(pos), size_(size), item_(item) {};
     NodeType Type() const override { return NodeType::ArrayType; };
     string ToString() const override {
         string ret = "<ArrayTypeNode>";
-        ret += "<size>" + to_string(size_) + "</size>";
-        ret += "<item>" + (item_ == nullptr ? "" :item_->ToString()) + "</item>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "<size>" + std::to_string(size_) + "</size>";
+        ret += "<item>" + (item_ == nullptr ? item_->ToString() : "") + "</item>";
         ret += "</ArrayTypeNode>";
         return ret;
     }
 public:
-    int size_;
+    int size_{};
     shared_ptr<TypeNode> item_{};
 };
 
@@ -273,10 +337,11 @@ class IdentNode: public ExprNode {
 public:
     IdentNode() = default;
     ~IdentNode() override = default;
-    explicit IdentNode(const string& name): name_(name) {}
+    IdentNode(const token::Position& pos, const string& name): ExprNode(pos), name_(name) {}
     NodeType Type() const override {return NodeType::Ident;};
     string ToString() const override {
         string ret = "<IdentNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<name>" + name_ + "</name>";
         ret += "</IdentNode>";
         return ret;
@@ -290,9 +355,15 @@ public:
 class BadExprNode: public ExprNode {
 public:
     BadExprNode() = default;
+    explicit BadExprNode(const token::Position& pos) : ExprNode(pos) {}
     ~BadExprNode() override = default;
     NodeType Type() const override {return NodeType::BadExpr;};
-    string ToString() const override {return "<BadExprNode/>";}
+    string ToString() const override {
+        string ret = "<BadExprNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</BadExprNode>";
+        return ret;
+    }
 };
 
 
@@ -301,12 +372,14 @@ class BasicLitNode: public ExprNode {
 public:
     BasicLitNode() = default;
     ~BasicLitNode() override = default;
-    BasicLitNode(token::Token token_type, const string& val):tok_(token_type), val_(val) {}
+    BasicLitNode(const token::Position& pos, token::Token token_type, const string& val)
+        : ExprNode(pos), tok_(token_type), val_(val) {}
     NodeType Type() const override {return NodeType::BasicLit;};
     string ToString() const override {
         string ret = "<BasicLitNode>";
-        ret +=  "<token>" + token::GetTokenName(tok_) + "</token>";
-        ret += "<value>" + val_  + "</value>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "<tok>" + token::GetTokenName(tok_) + "</tok>";
+        ret += "<val>" + val_ + "</val>";
         ret += "</BasicLitNode>";
         return ret;
     }
@@ -317,11 +390,15 @@ public:
 
 class CompositeLitNode: public ExprNode { 
 public:
+    explicit CompositeLitNode(const token::Position& pos) : ExprNode(pos) {}
+    CompositeLitNode(const token::Position& pos, const vector<shared_ptr<ExprNode>>& items)
+        : ExprNode(pos), items_(items) {}
     CompositeLitNode() = default;
     ~CompositeLitNode() override = default;
     NodeType Type() const override {return NodeType::CompositeLit;};
     string ToString() const override {
         string ret = "<CompositeLitNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         for (auto item: items_) {
             ret += "<item>" + (item == nullptr ? "" : item->ToString()) + "</item>";
         }
@@ -337,10 +414,12 @@ class ParenExprNode: public ExprNode {
 public:
     ParenExprNode() = default;
     ~ParenExprNode() override = default;
-    explicit ParenExprNode(const shared_ptr<ExprNode>& expr) :expr_(expr) {};
+    ParenExprNode(const token::Position& pos, const shared_ptr<ExprNode>& expr)
+        : ExprNode(pos), expr_(expr) {}
     NodeType Type() const override {return NodeType::ParenExpr;};
     string ToString() const override {
         string ret = "<ParenExprNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<expr>" + (expr_ == nullptr ? "" : expr_->ToString()) + "</expr>";
         ret += "</ParenExprNode>";
         return ret;
@@ -354,10 +433,12 @@ class IndexExprNode: public ExprNode {
 public:
     IndexExprNode() = default;
     ~IndexExprNode() override = default;
-    IndexExprNode(const shared_ptr<ExprNode>& x, const shared_ptr<ExprNode>& index) :x_(x), index_(index) {};
+    IndexExprNode(const token::Position& pos, const shared_ptr<ExprNode>& x, const shared_ptr<ExprNode>& index)
+        : ExprNode(pos), x_(x), index_(index) {}
     NodeType Type() const override {return NodeType::IndexExpr;};
     string ToString() const override {
         string ret = "<IndexExprNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<x>" + (x_ == nullptr ? "" : x_->ToString()) + "</x>";
         ret += "<index>" + (index_ == nullptr ? "" : index_->ToString()) + "</index>";
         ret += "</IndexExprNode>";
@@ -372,10 +453,13 @@ class CallExprNode: public ExprNode {
 public:
     CallExprNode() = default;
     ~CallExprNode() override= default;
-    CallExprNode(const shared_ptr<ExprNode>& fun, const vector<shared_ptr<ExprNode>>& args) :fun_(fun), args_(args) {};
+    explicit CallExprNode(const token::Position& pos) : ExprNode(pos) {}
+    CallExprNode(const token::Position& pos, const shared_ptr<ExprNode>& fun, const vector<shared_ptr<ExprNode>>& args)
+        : ExprNode(pos), fun_(fun), args_(args) {}
     NodeType Type() const override {return NodeType::CallExpr;};
     string ToString() const override {
         string ret = "<CallExprNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<fun>" + (fun_ == nullptr ? "" : fun_->ToString()) + "</fun>";
         for (auto item: args_) {
             ret += "<arg>" + (item == nullptr ? "" : item->ToString()) + "</arg>";
@@ -393,10 +477,12 @@ class UnaryExprNode: public ExprNode {
 public:
     UnaryExprNode() = default;
     ~UnaryExprNode() override = default;
-    UnaryExprNode(token::Token op_tok, const shared_ptr<ExprNode>& x) :op_tok_(op_tok), x_(x) {};
+    UnaryExprNode(const token::Position& pos, token::Token op_tok, const shared_ptr<ExprNode>& x)
+        : ExprNode(pos), op_tok_(op_tok), x_(x) {}
     NodeType Type() const override {return NodeType::UnaryExpr;};
     string ToString() const override {
         string ret = "<UnaryExprNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<op>" + token::GetTokenName(op_tok_) + "</op>";
         ret += "<x>" + (x_ == nullptr ? "" : x_->ToString()) + "</x>";
         ret += "</UnaryExprNode>";
@@ -412,11 +498,12 @@ class BinaryExprNode: public ExprNode {
 public:
     BinaryExprNode() = default;
     ~BinaryExprNode() override = default;
-    BinaryExprNode(token::Token op_tok, const shared_ptr<ExprNode>& x, const shared_ptr<ExprNode>& y) :
-            op_tok_(op_tok), x_(x), y_(y) {};
+    BinaryExprNode(const token::Position& pos, token::Token op_tok, const shared_ptr<ExprNode>& x, const shared_ptr<ExprNode>& y)
+        : ExprNode(pos), op_tok_(op_tok), x_(x), y_(y) {}
     NodeType Type() const override {return NodeType::BinaryExpr;};
     string ToString() const override {
         string ret = "<BinaryExprNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<op>" + token::GetTokenName(op_tok_) + "</op>";
         ret += "<x>" + (x_ == nullptr ? "" : x_->ToString()) + "</x>";
         ret += "<y>" + (y_ == nullptr ? "" : y_->ToString()) + "</y>";
@@ -444,32 +531,35 @@ class FieldNode: public Node {
 public:
     FieldNode() = default;
     ~FieldNode() override = default;
-    FieldNode(const shared_ptr<IdentNode>& name, const shared_ptr<TypeNode>& type) :
-            name_(name), type_(type) {};
+    FieldNode(const token::Position& pos, const shared_ptr<TypeNode>& type, const shared_ptr<IdentNode>& name)
+        : Node(pos), type_(type), name_(name) {}
     NodeType Type() const override {return NodeType::Field;};
     string ToString() const override {
         string ret = "<FieldNode>";
-        ret += "<name>" + (name_ == nullptr ? "" : name_->ToString()) + "</name>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<type>" + (type_ == nullptr ? "" : type_->ToString()) + "</type>";
+        ret += "<name>" + (name_ == nullptr ? "" : name_->ToString()) + "</name>";
         ret += "</FieldNode>";
         return ret;
     }
 public:
-    shared_ptr<IdentNode> name_{};
     shared_ptr<TypeNode> type_{};
+    shared_ptr<IdentNode> name_{};
 };
-
 
 // FieldListNode represents a list of Fields, enclosed by parentheses or braces.
 class FieldListNode: public Node {
 public:
     FieldListNode() = default;
     ~FieldListNode() override = default;
-    explicit FieldListNode(const vector<shared_ptr<FieldNode>>& fields) :fields_(fields) {};
+    explicit FieldListNode(const token::Position& pos) : Node(pos) {}
+    FieldListNode(const token::Position& pos, const vector<shared_ptr<FieldNode>>& fields)
+        : Node(pos), fields_(fields) {}
     NodeType Type() const override {return NodeType::FieldList;};
     string ToString() const override {
         string ret = "<FieldListNode>";
-        for (auto field: fields_) {
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        for (const auto& field: fields_) {
             ret += "<field>" + (field == nullptr ? "" : field->ToString()) + "</field>";
         }
         ret += "</FieldListNode>";
@@ -488,10 +578,14 @@ public:
 class BadDeclNode: public DeclNode {
 public:
     BadDeclNode() = default;
+    BadDeclNode(const token::Position& pos) : DeclNode(pos) {}
     ~BadDeclNode() override = default;
     NodeType Type() const override {return NodeType::BadDecl;};
     string ToString() const override {
-        return "<BadDeclNode/>";
+        string ret = "<BadDeclNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</BadDeclNode>";
+        return ret;
     }
 };
 
@@ -501,14 +595,16 @@ public:
     FuncDeclNode() = default;
     ~FuncDeclNode() override = default;
     FuncDeclNode(
-            const shared_ptr<TypeNode>& type,
-            const shared_ptr<IdentNode>& name,
-            const shared_ptr<FieldListNode>& params,
-            shared_ptr<StmtNode> body) :
-            type_(type), name_(name), params_(params), body_(std::move(body)) {};
+        const token::Position& pos,
+        const shared_ptr<TypeNode>& type,
+        const shared_ptr<IdentNode>& name,
+        const shared_ptr<FieldListNode>& params,
+        const shared_ptr<StmtNode>& body)
+        : DeclNode(pos), type_(type), name_(name), params_(params), body_(body) {}
     NodeType Type() const override {return NodeType::FuncDecl;};
     string ToString() const override {
         string ret = "<FuncDeclNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<type>" + (type_ == nullptr ? "" : type_->ToString()) + "</type>";
         ret += "<name>" + (name_ == nullptr ? "" : name_->ToString()) + "</name>";
         ret += "<params>" + (params_ == nullptr ? "" : params_->ToString()) + "</params>";
@@ -528,11 +624,17 @@ class SingleVarDeclNode: public DeclNode {
 public:
     SingleVarDeclNode() = default;
     ~SingleVarDeclNode() override = default;
-    SingleVarDeclNode(bool is_const, const shared_ptr<TypeNode>& type, const shared_ptr<IdentNode>& name, const shared_ptr<ExprNode>& val) :
-            is_const_(is_const), type_(type), name_(name), val_(val) {}
+    explicit SingleVarDeclNode(const token::Position& pos): DeclNode(pos) {}
+    SingleVarDeclNode(
+        const token::Position& pos,
+        const bool is_const,
+        const shared_ptr<TypeNode>& type,
+        const shared_ptr<IdentNode>& name,
+        const shared_ptr<ExprNode>& val): DeclNode(pos), is_const_(is_const), type_(type), name_(name), val_(val) {}
     NodeType Type() const override {return NodeType::SingleVarDecl;};
     string ToString() const override {
         string ret = "<SingleVarDeclNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<is_const>" + (is_const_ ? string("true") : string("false")) + "</is_const>";
         ret += "<type>" + (type_ == nullptr ? "" : type_->ToString()) + "</type>";
         ret += "<name>" + (name_ == nullptr ? "" : name_->ToString()) + "</name>";
@@ -552,10 +654,13 @@ class VarDeclNode: public DeclNode {
 public:
     VarDeclNode() = default;
     ~VarDeclNode() override = default;
-    explicit VarDeclNode(const vector<shared_ptr<DeclNode>>& decls) :decls_(decls) {};
+    explicit VarDeclNode(const token::Position& pos) : DeclNode(pos) {}
+    VarDeclNode(
+        const token::Position& pos, const vector<shared_ptr<DeclNode>>& decls) : DeclNode(pos), decls_(decls) {}
     NodeType Type() const override {return NodeType::VarDecl;};
     string ToString() const override {
         string ret = "<VarDeclNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         for (auto decl: decls_) {
             ret += "<decl>" + (decl == nullptr ? "" : decl->ToString()) + "</decl>";
         }
@@ -574,11 +679,15 @@ public:
 // statement node cannot be created.
 class BadStmtNode: public StmtNode {
 public:
+    BadStmtNode(const token::Position& pos) : StmtNode(pos) {}
     BadStmtNode() = default;
     ~BadStmtNode() override = default;
     NodeType Type() const override {return NodeType::BadStmt;};
     string ToString() const override {
-        return "<BadStmtNode/>";
+        string ret = "<BadStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</BadStmtNode>";
+        return ret;
     }
 };
 
@@ -587,10 +696,11 @@ class DeclStmtNode: public StmtNode {
 public:
     DeclStmtNode() = default;
     ~DeclStmtNode() override = default;
-    explicit DeclStmtNode(const shared_ptr<DeclNode>& decl) :decl_(decl) {};
+    DeclStmtNode(const token::Position& pos, const shared_ptr<DeclNode>& decl) : StmtNode(pos), decl_(decl) {}
     NodeType Type() const override {return NodeType::DeclStmt;};
     string ToString() const override {
         string ret = "<DeclStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<decl>" + (decl_ == nullptr ? "" : decl_->ToString()) + "</decl>";
         ret += "</DeclStmtNode>";
         return ret;
@@ -604,9 +714,13 @@ class EmptyStmtNode: public StmtNode {
 public:
     EmptyStmtNode() = default;
     ~EmptyStmtNode() override = default;
-    NodeType Type() const override {return NodeType::EmptyStmt;};
+    EmptyStmtNode(const token::Position& pos) : StmtNode(pos) {}
+    NodeType Type() const override {return NodeType::EmptyStmt;}
     string ToString() const override {
-        return "<EmptyStmtNode/>";
+        string ret = "<EmptyStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</EmptyStmtNode>";
+        return ret;
     }
 };
 
@@ -615,10 +729,11 @@ class ExprStmtNode: public StmtNode {
 public:
     ExprStmtNode() = default;
     ~ExprStmtNode() override = default;
-    explicit ExprStmtNode(const shared_ptr<ExprNode>& expr) :expr_(expr) {};
+    ExprStmtNode(const token::Position& pos, const shared_ptr<ExprNode>& expr) : StmtNode(pos), expr_(expr) {}
     NodeType Type() const override {return NodeType::ExprStmt;};
     string ToString() const override {
         string ret = "<ExprStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<expr>" + (expr_ == nullptr ? "" : expr_->ToString()) + "</expr>";
         ret += "</ExprStmtNode>";
         return ret;
@@ -632,10 +747,15 @@ class AssignStmtNode: public StmtNode {
 public:
     AssignStmtNode() = default;
     ~AssignStmtNode() override = default;
-    explicit AssignStmtNode(const shared_ptr<ExprNode>& lhs, const shared_ptr<ExprNode>& rhs) :lhs_(lhs), rhs_(rhs) {};
+    AssignStmtNode(
+        const token::Position& pos,
+        const shared_ptr<ExprNode>& lhs,
+        const shared_ptr<ExprNode>& rhs) 
+        : StmtNode(pos), lhs_(lhs), rhs_(rhs) {}
     NodeType Type() const override {return NodeType::AssignStmt;};
     string ToString() const override {
         string ret = "<AssignStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<lhs>" + (lhs_ == nullptr ? "" : lhs_->ToString()) + "</lhs>";
         ret += "<rhs>" + (rhs_ == nullptr ? "" : rhs_->ToString()) + "</rhs>";
         ret += "</AssignStmtNode>";
@@ -650,9 +770,11 @@ class ForStmtNode: public StmtNode {
 public:
     ForStmtNode() = default;
     ~ForStmtNode() override = default;
+    ForStmtNode(const token::Position& pos) : StmtNode(pos) {}
     NodeType Type() const override {return NodeType::ForStmt;};
     string ToString() const override {
         string ret = "<ForStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<init>" + (init_ == nullptr ? "" : init_->ToString()) + "</init>";
         ret += "<cond>" + (cond_ == nullptr ? "" : cond_->ToString()) + "</cond>";
         ret += "<step>" + (step_ == nullptr ? "" : step_->ToString()) + "</step>";
@@ -672,9 +794,11 @@ class WhileStmtNode : public StmtNode {
 public:
     WhileStmtNode() = default;
     ~WhileStmtNode() override = default;
+    WhileStmtNode(const token::Position& pos) : StmtNode(pos) {}
     NodeType Type() const override {return NodeType::WhileStmt;};
     string ToString() const override {
         string ret = "<WhileStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<cond>" + (cond_ == nullptr ? "" : cond_->ToString()) + "</cond>";
         ret += "<body>" + (body_ == nullptr ? "" : body_->ToString()) + "</body>";
         ret += "</WhileStmtNode>";
@@ -690,10 +814,12 @@ class ReturnStmtNode: public StmtNode {
 public:
     ReturnStmtNode() = default;
     ~ReturnStmtNode() override = default;
-    explicit ReturnStmtNode(const shared_ptr<ExprNode>& results) :results_(results) {};
+    explicit ReturnStmtNode(const token::Position& pos) : StmtNode(pos) {}
+    ReturnStmtNode(const token::Position& pos, const shared_ptr<ExprNode>& results) : StmtNode(pos), results_(results) {}
     NodeType Type() const override {return NodeType::ReturnStmt;};
     string ToString() const override {
         string ret = "<ReturnStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<results>" + (results_ == nullptr ? "" : results_->ToString()) + "</results>";
         ret += "</ReturnStmtNode>";
         return ret;
@@ -702,32 +828,17 @@ public:
     shared_ptr<ExprNode> results_{};
 };
 
-// BranchStmtNode represents a branch statement.
-class BranchStmtNode: public StmtNode {
-public:
-    BranchStmtNode() = default;
-    ~BranchStmtNode() override = default;
-    explicit BranchStmtNode(token::Token tok) :tok_(tok) {};
-    NodeType Type() const override {return NodeType::BranchStmt;};
-    string ToString() const override {
-        string ret = "<BranchStmtNode>";
-        ret += "<tok>" + token::GetTokenName(tok_) + "</tok>";
-        ret += "</BranchStmtNode>";
-        return ret;
-    }
-public:
-    token::Token tok_{};
-};
-
 // BlockStmtNode represents a block statement.
 class BlockStmtNode: public StmtNode {
 public:
     BlockStmtNode() = default;
     ~BlockStmtNode() override = default;
-    explicit BlockStmtNode(const vector<shared_ptr<StmtNode>>& stmts) :stmts_(stmts) {};
+    explicit BlockStmtNode(const token::Position& pos) : StmtNode(pos) {}
+    BlockStmtNode(const token::Position& pos, const vector<shared_ptr<StmtNode>>& stmts) : StmtNode(pos), stmts_(stmts) {}
     NodeType Type() const override {return NodeType::BlockStmt;};
     string ToString() const override {
         string ret = "<BlockStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         for (auto stmt: stmts_) {
             ret += "<stmt>" + (stmt == nullptr ? "" : stmt->ToString()) + "</stmt>";
         }
@@ -743,11 +854,17 @@ class IfStmtNode: public StmtNode {
 public:
     IfStmtNode() = default;
     ~IfStmtNode() override = default;
-    IfStmtNode(const shared_ptr<ExprNode>& cond, const shared_ptr<StmtNode>& body, const shared_ptr<StmtNode>& else_stmt) :
-            cond_(cond), body_(body), else_(else_stmt) {};
+    explicit IfStmtNode(const token::Position& pos) : StmtNode(pos) {};
+    IfStmtNode(
+        const token::Position& pos,
+        const shared_ptr<ExprNode>& cond,
+        const shared_ptr<StmtNode>& body,
+        const shared_ptr<StmtNode>& else_stmt)
+            : StmtNode(pos), cond_(cond), body_(body), else_(else_stmt) {};
     NodeType Type() const override {return NodeType::BlockStmt;};
     string ToString() const override {
         string ret = "<IfStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<cond>" + (cond_ == nullptr ? "" : cond_->ToString()) + "</cond>";
         ret += "<body>" + (body_ == nullptr ? "" : body_->ToString()) + "</body>";
         ret += "<else>" + (else_ == nullptr ? "" : else_->ToString()) + "</else>";
@@ -765,11 +882,13 @@ class CaseStmtNode: public StmtNode {
 public:
     CaseStmtNode() = default;
     ~CaseStmtNode() override = default;
-    CaseStmtNode(const shared_ptr<ExprNode>& cond, const vector<shared_ptr<StmtNode>>& body) :
-            cond_(cond), body_(body) {};
+    explicit CaseStmtNode(const token::Position& pos) : StmtNode(pos) {};
+    CaseStmtNode(const token::Position& pos, const shared_ptr<ExprNode>& cond, const vector<shared_ptr<StmtNode>>& body) :
+            StmtNode(pos), cond_(cond), body_(body) {};
     NodeType Type() const override {return NodeType::CaseStmt;};
     string ToString() const override {
         string ret = "<CaseStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<cond>" + (cond_ == nullptr ? "" : cond_->ToString()) + "</cond>";
         for (auto stmt: body_) {
             ret += "<body>" + (stmt == nullptr ? "" : stmt->ToString()) + "</body>";
@@ -787,11 +906,13 @@ class SwitchStmtNode: public StmtNode {
 public:
     SwitchStmtNode() = default;
     ~SwitchStmtNode() override = default;
-    SwitchStmtNode(const shared_ptr<ExprNode>& cond, const vector<shared_ptr<StmtNode>>& cases) :
-            cond_(cond), cases_(cases) {};
+    explicit SwitchStmtNode(const token::Position& pos) : StmtNode(pos) {};
+    SwitchStmtNode(const token::Position& pos, const shared_ptr<ExprNode>& cond, const vector<shared_ptr<StmtNode>>& cases) :
+            StmtNode(pos), cond_(cond), cases_(cases) {};
     NodeType Type() const override {return NodeType::SwitchStmt;};
     string ToString() const override {
         string ret = "<SwitchStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<cond>" + (cond_ == nullptr ? "" : cond_->ToString()) + "</cond>";
         for (auto stmt: cases_) {
             ret += "<case>" + (stmt == nullptr ? "" : stmt->ToString()) + "</case>";
@@ -809,10 +930,12 @@ class ScanStmtNode: public StmtNode {
 public:
     ScanStmtNode() = default;
     ~ScanStmtNode() override = default;
-    ScanStmtNode(const shared_ptr<ExprNode>& var) :var_(var) {};
+    explicit ScanStmtNode(const token::Position& pos) : StmtNode(pos) {};
+    ScanStmtNode(const token::Position& pos, const shared_ptr<ExprNode>& var) : StmtNode(pos), var_(var) {};
     NodeType Type() const override {return NodeType::ScanStmt;};
     string ToString() const override {
         string ret = "<ScanStmtNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         ret += "<var>" + (var_ == nullptr ? "" : var_->ToString()) + "</var>";
         ret += "</ScanStmtNode>";
         return ret;
@@ -826,11 +949,13 @@ class PrintfStmtNode: public StmtNode {
 public:
     PrintfStmtNode() = default;
     ~PrintfStmtNode() override = default;
-    PrintfStmtNode(const string& fmt, const vector<shared_ptr<ExprNode>>& args) :fmt_(fmt), args_(args) {};
+    explicit PrintfStmtNode(const token::Position& pos) : StmtNode(pos) {};
+    PrintfStmtNode(const token::Position& pos, const vector<shared_ptr<ExprNode>>& args) :
+            StmtNode(pos), args_(args) {};
     NodeType Type() const override {return NodeType::PrintfStmt;};
     string ToString() const override {
         string ret = "<PrintfStmtNode>";
-        ret += "<fmt>" + fmt_ + "</fmt>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
         for (auto arg: args_) {
             ret += "<arg>" + (arg == nullptr ? "" : arg->ToString()) + "</arg>";
         }
@@ -838,7 +963,6 @@ public:
         return ret;
     }
 public:
-    string fmt_;
     vector<shared_ptr<ExprNode>> args_;
 };
 

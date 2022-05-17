@@ -88,7 +88,6 @@ private:
     shared_ptr<ast::StmtNode> ParseCaseStmt();
 
     shared_ptr<ast::ExprNode> ParseExpr();
-    shared_ptr<ast::ExprNode> ParseParenExpr();
     shared_ptr<ast::ExprNode> ParseBinaryExpr(int prec);
     shared_ptr<ast::ExprNode> ParseUnaryExpr();
     shared_ptr<ast::ExprNode> ParsePrimaryExpr();
@@ -121,6 +120,7 @@ private:
     token::Token tok_;
     string lit_;
     int pos_;
+    token::Position position_;
     
     shared_ptr<Scanner> scanner_;
     shared_ptr<token::File> file_;

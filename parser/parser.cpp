@@ -8,27 +8,27 @@
 // Helper function to parse ast.
 
 // NewBasicTypeNode is called for return basic type node.
-shared_ptr<ast::TypeNode> NewBasicTypeNode(token::Token tok) {
+shared_ptr<ast::TypeNode> NewBasicTypeNode(const token::Position& pos, token::Token tok) {
     if (tok == token::Token::CHARTK) {
-        return make_shared<ast::CharTypeNode>();
+        return make_shared<ast::CharTypeNode>(pos);
     } else if (tok == token::Token::INTTK) {
-        return make_shared<ast::IntTypeNode>();
+        return make_shared<ast::IntTypeNode>(pos);
     } else if (tok == token::Token::VOIDTK) {
-        return make_shared<ast::VoidTypeNode>();
+        return make_shared<ast::VoidTypeNode>(pos);
     } else {
-        return make_shared<ast::BadTypeNode>();
+        return make_shared<ast::BadTypeNode>(pos);
     }
 }
 
 // NewArrayTypeNode is called for return array type node.
-shared_ptr<ast::TypeNode> NewArrayTypeNode(token::Token tok, const vector<int>& dimesions) {
+shared_ptr<ast::TypeNode> NewArrayTypeNode(const token::Position& pos, token::Token tok, const vector<int>& dimesions) {
     if (dimesions.empty() || (tok != token::CHARTK && tok != token::INTTK)) {
-        return make_shared<ast::BadTypeNode>();
+        return make_shared<ast::BadTypeNode>(pos);
     }
 
     vector<shared_ptr<ast::ArrayTypeNode>> array_type_nodes;
     for (const auto& dimension : dimesions) {
-        auto array_type_node = make_shared<ast::ArrayTypeNode>();
+        auto array_type_node = make_shared<ast::ArrayTypeNode>(pos);
         array_type_node->size_ = dimension;
         array_type_nodes.push_back(array_type_node);
     }
@@ -37,7 +37,7 @@ shared_ptr<ast::TypeNode> NewArrayTypeNode(token::Token tok, const vector<int>& 
         array_type_nodes[i]->item_ = array_type_nodes[i + 1];
     }
 
-    array_type_nodes.back()->item_ = NewBasicTypeNode(tok);
+    array_type_nodes.back()->item_ = NewBasicTypeNode(pos, tok);
 
     return array_type_nodes.front();
 }
@@ -85,6 +85,7 @@ int Parser::Expect(token::Token tok) {
 // Next advance to the next token.
 void Parser::Next() {
     scanner_->Scan(&pos_, &tok_, &lit_);
+    position_ = file_->GetPositionByOffset(pos_);
 }
 
 // ParserDecl is called for parse decl.
@@ -101,21 +102,21 @@ shared_ptr<ast::DeclNode> Parser::ParseDecl() {
     Next();
     if (decl_type != token::Token::INTTK && decl_type != token::Token::CHARTK && decl_type != token::Token::VOIDTK) {
         Error(pos_, "for begin of a declear, expect int, char, or void");
-        return make_shared<ast::BadDeclNode>();
+        return make_shared<ast::BadDeclNode>(position_);
     }
 
     int name_pos = pos_;
     string name = lit_;
     if (tok_ != token::Token::MAINTK && tok_ != token::Token::IDENFR) {
         Error(pos_, "for decl, expect <int/char/void> name");
-        return make_shared<ast::BadDeclNode>();
+        return make_shared<ast::BadDeclNode>(position_);
     }
     Next();
 
     if (tok_ == token::Token::LPARENT) {
         if (is_const) {
             Error(pos_, "const function result type not supported");
-            return make_shared<ast::BadDeclNode>();
+            return make_shared<ast::BadDeclNode>(position_);
         }
         return ParseFuncDecl(decl_pos, decl_type, name_pos, name);
     } 
@@ -126,23 +127,21 @@ shared_ptr<ast::DeclNode> Parser::ParseDecl() {
 // ParseFuncDecl is called for parse function decl.
 // e.g. 'int main() { ... }';
 shared_ptr<ast::DeclNode> Parser::ParseFuncDecl(int decl_pos, token::Token decl_type, int name_pos, const string& name) {
-    auto func_decl_node = make_shared<ast::FuncDeclNode>();
-    func_decl_node->type_ = NewBasicTypeNode(decl_type);
-    func_decl_node->name_ = make_shared<ast::IdentNode>(name);
-    
-    // Get Params.
-    func_decl_node->params_ = ParseFieldList();
+    auto decl_position = file_->GetPositionByOffset(decl_pos);
+    auto name_position = file_->GetPositionByOffset(name_pos);
+
+    auto func_type = NewBasicTypeNode(decl_position, decl_type);
+    auto func_name = make_shared<ast::IdentNode>(name_position, name);
+
+    // Parse func param list.
+    auto func_params = ParseFieldList();
     Expect(token::Token::RPARENT);
 
-    // GetBody.
-    func_decl_node->body_ = ParseBlockStmt();
-    if (tok_ != token::Token::RBRACE) {
-        Error(pos_, "for end of a function, expect }");
-        return make_shared<ast::BadDeclNode>();
-    }
-    Next();
+    // Parse func body.
+    auto func_body = ParseBlockStmt();
+    Expect(token::Token::RBRACE);
 
-    return func_decl_node;
+    return make_shared<ast::FuncDeclNode>(decl_position, func_type, func_name, func_params, func_body);
 }
 
 // ParseFieldList e.g. (int a, char b, int c) for a function decl.
@@ -150,50 +149,32 @@ shared_ptr<ast::DeclNode> Parser::ParseFuncDecl(int decl_pos, token::Token decl_
 // After calling this function, tok_ will be ')'.
 // return nullptr for badFiledListNode.
 shared_ptr<ast::FieldListNode> Parser::ParseFieldList() {
-    if (tok_ != token::Token::LPARENT) {
-        return nullptr;
-    }
-    Next();
+    auto fields = make_shared<ast::FieldListNode>(position_);
 
-    auto fields = make_shared<ast::FieldListNode>();
+    Expect(token::Token::LPARENT);
     if (tok_ == token::Token::RPARENT) {
         return fields;
     }
 
     while(true) {
-        auto param = make_shared<ast::FieldNode>();
-        fields->fields_.push_back(param);
-
         // Get input type.
         if (tok_ != token::Token::INTTK && tok_ != token::Token::CHARTK) {
             Error(pos_, "for paramlist, expect <int/char> indetifier");
-            return nullptr;
         }
-        param->type_ = NewBasicTypeNode(tok_);
-
-        // Get input name.
+        auto param_type = NewBasicTypeNode(position_, tok_);
         Next();
-        if (tok_ != token::Token::IDENFR) {
-            Error(pos_, "for paramlist, expect <int/char> indetifier");
-            return nullptr;
-        }
-        param->name_ = make_shared<ast::IdentNode>(lit_);
 
-        Next();
+        // Get param name.
+        auto param_name = make_shared<ast::IdentNode>(position_, lit_);
+        Expect(token::Token::IDENFR);
+
+        fields->fields_.push_back(make_shared<ast::FieldNode>(param_type->Pos(), param_type, param_name));
 
         // for ')', break.
         if (tok_ == token::Token::RPARENT) {
             break;
         }
-
-        // not ')', expect ','.
-        if (tok_ != token::Token::COMMA) {
-            Error(pos_, "for paramlist for func decl, expect ',' between params");
-            return nullptr;
-        }
-        
-        // for spliter ',', do next.
-        Next();
+        Expect(token::Token::COMMA);
     }
 
     return fields;
@@ -206,22 +187,18 @@ shared_ptr<ast::FieldListNode> Parser::ParseFieldList() {
 // After Calling this function, tok_ should be next token of ';'.
 // e.g. 'int a', 'int a = 1', 'int a, b, c';
 shared_ptr<ast::DeclNode> Parser::ParseVarDecl(int decl_pos, bool is_const, token::Token decl_type, int name_pos, const string& name) {
+    auto decl_position = file_->GetPositionByOffset(decl_pos);
+    auto var_decl_node = make_shared<ast::VarDeclNode>(decl_position);
+
     int cur_name_pos = name_pos;
     string cur_name = name;
-
     // scan token, until get ','.
-    auto var_decl_node = make_shared<ast::VarDeclNode>();
     while (true) {
         // Parse current var, current tok_ is '=' or ',' or ';'.
         var_decl_node->decls_.push_back(ParseSingleVarDecl(is_const, decl_pos, decl_type, cur_name_pos, cur_name));
 
         if (tok_ == token::Token::SEMICN) {
             break;
-        }
-
-        if (tok_ != token::Token::COMMA) {
-            Error(pos_, "for var decl step word, expect ',' or ';'");
-            return make_shared<ast::BadDeclNode>();
         }
 
         // current tok_ is ',' :=> get next identfire's name.
@@ -238,7 +215,7 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl(int decl_pos, bool is_const, toke
 
 
 shared_ptr<ast::StmtNode> Parser::ParseBlockStmt() {
-    auto stmt_list = make_shared<ast::BlockStmtNode>();
+    auto stmt_list = make_shared<ast::BlockStmtNode>(position_);
 
     Expect(token::Token::LBRACE);
 
@@ -255,7 +232,7 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
         case token::Token::CONSTTK:
         case token::Token::INTTK:
         case token::Token::CHARTK:
-            return make_shared<ast::DeclStmtNode>(ParseVarDecl());
+            return make_shared<ast::DeclStmtNode>(position_, ParseVarDecl());
         case token::Token::IDENFR:
             stmt_node = ParseSimpleStmt();
             Expect(token::Token::SEMICN);
@@ -265,8 +242,9 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
         case token::Token::WHILETK:
             return ParseWhileStmt();
         case token::Token::SEMICN:
+            stmt_node = make_shared<ast::EmptyStmtNode>(position_);
             Next();
-            return make_shared<ast::EmptyStmtNode>();
+            return stmt_node;
         case token::Token::FORTK:
             return ParseForStmt();
         case token::Token::LBRACE:
@@ -282,10 +260,8 @@ shared_ptr<ast::StmtNode> Parser::ParseStmt() {
         case token::Token::RETURNTK:
             return ParseReturnStmt();
         default:
-            return make_shared<ast::BadStmtNode>();
+            return make_shared<ast::BadStmtNode>(position_);
     }
-
-    return make_shared<ast::BadStmtNode>();
 }
 
 /**
@@ -301,12 +277,12 @@ shared_ptr<ast::StmtNode> Parser::ParseSimpleStmt() {
         case token::Token::ASSIGN:
             Next();
             y = ParseExpr();
-            return make_shared<ast::AssignStmtNode>(x, y);
+            return make_shared<ast::AssignStmtNode>(x->Pos(), x, y);
         case token::Token::SEMICN:
-            return make_shared<ast::ExprStmtNode>(x);
+            return make_shared<ast::ExprStmtNode>(x->Pos(), x);
         default:
             Error(pos_, "for simple stmt, after first expression, expect '=' or ';'");
-            return make_shared<ast::BadStmtNode>();
+            return make_shared<ast::BadStmtNode>(x->Pos());
     }
 }
 
@@ -316,38 +292,21 @@ shared_ptr<ast::StmtNode> Parser::ParseSimpleStmt() {
  * @return shared_ptr<ast::StmtNode> 
  */
 shared_ptr<ast::StmtNode> Parser::ParseScanStmt() {
-    if (tok_ != token::Token::SCANFTK) {
-        Error(pos_, "for begin of scanf stmt, expect 'scanf'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    auto scanf_stmt = make_shared<ast::ScanStmtNode>(position_);
 
-    if (tok_ != token::Token::LPARENT) {
-        Error(pos_, "for begin of scanf stmt, expect 'scanf('");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::SCANFTK);
+    Expect(token::Token::LPARENT);
 
-    auto scanf_stmt = make_shared<ast::ScanStmtNode>();
     if (tok_ != token::Token::IDENFR) {
         Error(pos_, "for expr of scanf stmt, expect indetifier");
-        return make_shared<ast::BadStmtNode>();
-    }
-    scanf_stmt->var_ = make_shared<ast::IdentNode>(lit_);
-
-    Next();
-
-    if (tok_ != token::Token::RPARENT) {
-        Error(pos_, "for end of scanf stmt, expect ')'");
-        return make_shared<ast::BadStmtNode>();
+        scanf_stmt->var_ = make_shared<ast::BadExprNode>(position_);
+    } else {
+        scanf_stmt->var_ = make_shared<ast::IdentNode>(position_, lit_);
     }
     Next();
 
-    if (tok_ != token::Token::SEMICN) {
-        Error(pos_, "for end of scanf stmt, expect ';'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::RPARENT);
+    Expect(token::Token::SEMICN);
 
     return scanf_stmt;
 }
@@ -358,19 +317,11 @@ shared_ptr<ast::StmtNode> Parser::ParseScanStmt() {
  * @return shared_ptr<ast::StmtNode> 
  */
 shared_ptr<ast::StmtNode> Parser::ParsePrintfStmt() {
-    if (tok_ != token::Token::PRINTFTK) {
-        Error(pos_, "for begin of printf stmt, expect 'printf'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    auto printf_stmt = make_shared<ast::PrintfStmtNode>(position_);
 
-    if (tok_ != token::Token::LPARENT) {
-        Error(pos_, "for begin of printf stmt, expect 'printf('");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::PRINTFTK);
+    Expect(token::Token::LPARENT);
 
-    auto printf_stmt = make_shared<ast::PrintfStmtNode>();
     while (tok_ != token::Token::RPARENT) {
         printf_stmt->args_.push_back(ParseExpr());
 
@@ -381,17 +332,8 @@ shared_ptr<ast::StmtNode> Parser::ParsePrintfStmt() {
         }
     }
 
-    if (tok_ != token::Token::RPARENT) {
-        Error(pos_, "for end of printf stmt, expect ')'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
-
-    if (tok_ != token::Token::SEMICN) {
-        Error(pos_, "for end of printf stmt, expect ';'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::RPARENT);
+    Expect(token::Token::SEMICN);
 
     return printf_stmt;
 }
@@ -402,28 +344,16 @@ shared_ptr<ast::StmtNode> Parser::ParsePrintfStmt() {
  * @return shared_ptr<ast::StmtNode> 
  */
 shared_ptr<ast::StmtNode> Parser::ParseReturnStmt() {
-    if (tok_ != token::Token::RETURNTK) {
-        Error(pos_, "for begin of return stmt, expect 'return'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    auto return_stmt = make_shared<ast::ReturnStmtNode>(position_);
+
+    Expect(token::Token::RETURNTK);
 
     if (tok_ != token::Token::SEMICN) {
-        auto expr = ParseExpr();
-        if (tok_ != token::Token::SEMICN) {
-            Error(pos_, "for end of return stmt, expect ';'");
-            return make_shared<ast::BadStmtNode>();
-        }
-        Next();
-        return make_shared<ast::ReturnStmtNode>(expr);
+        return_stmt->results_ = ParseExpr();
     }
 
-    if (tok_ != token::Token::SEMICN) {
-        Error(pos_, "for end of return stmt, expect ';'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
-    return make_shared<ast::ReturnStmtNode>();
+    Expect(token::Token::SEMICN);
+    return return_stmt;
 }
 
 /**
@@ -432,42 +362,21 @@ shared_ptr<ast::StmtNode> Parser::ParseReturnStmt() {
  * @return shared_ptr<ast::StmtNode> 
  */
 shared_ptr<ast::StmtNode> Parser::ParseSwitchStmt() {
-    if (tok_ != token::Token::SWITCHTK) {
-        Error(pos_, "for begin of switch stmt, expect 'switch'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    auto switch_stmt = make_shared<ast::SwitchStmtNode>(position_);
 
-    if (tok_ != token::Token::LPARENT) {
-        Error(pos_, "for begin of switch stmt, expect '('");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::SWITCHTK);
+    Expect(token::Token::LPARENT);
 
-    auto switch_stmt = make_shared<ast::SwitchStmtNode>();
     switch_stmt->cond_ = ParseExpr();
 
-    if (tok_ != token::Token::RPARENT) {
-        Error(pos_, "for end of switch stmt, expect ')'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
-
-    if (tok_ != token::Token::LBRACE) {
-        Error(pos_, "for begin of switch stmt, expect '{'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::RPARENT);
+    Expect(token::Token::LBRACE);
     
     while (tok_ == token::Token::CASETK || tok_ == token::Token::DEFAULTTK) {
         switch_stmt->cases_.push_back(ParseCaseStmt());
     }
 
-    if (tok_ != token::Token::RBRACE) {
-        Error(pos_, "for end of switch stmt, expect '}'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::RBRACE);
 
     return switch_stmt;
 }
@@ -478,7 +387,8 @@ shared_ptr<ast::StmtNode> Parser::ParseSwitchStmt() {
  * @return shared_ptr<ast::StmtNode> 
  */
 shared_ptr<ast::StmtNode> Parser::ParseCaseStmt() {
-    auto case_stmt_node = make_shared<ast::CaseStmtNode>();
+    auto case_stmt_node = make_shared<ast::CaseStmtNode>(position_);
+
     if (tok_ == token::Token::CASETK) {
         Next();
         case_stmt_node->cond_ = ParseExpr();
@@ -487,14 +397,10 @@ shared_ptr<ast::StmtNode> Parser::ParseCaseStmt() {
         case_stmt_node->cond_ = nullptr;
     } else {
         Error(pos_, "for begin of case stmt, expect <case/default>");
-        return make_shared<ast::BadStmtNode>();
+        // FIXME: what todo?
     }
 
-    if (tok_ != token::Token::COLON) {
-        Error(pos_, "for end of case stmt, expect '<case expr/default>:'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::COLON);
 
     while (tok_ != token::Token::CASETK && tok_ != token::Token::DEFAULTTK && tok_ != token::RBRACE) {
         case_stmt_node->body_.push_back(ParseStmt());
@@ -517,16 +423,12 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl() {
     token::Token decl_type = tok_;
     if (decl_type != token::Token::CHARTK && decl_type != token::Token::INTTK) {
         Error(pos_, "for begin of a declear, expect int or char");
-        return make_shared<ast::BadDeclNode>();
+        return make_shared<ast::BadDeclNode>(position_);
     }
     Next();
 
     int name_pos = pos_;
     string name = lit_;
-    if(tok_ != token::Token::IDENFR) {
-        Error(pos_, "for var decl, expect <int/char> indetifier");
-        return make_shared<ast::BadDeclNode>();
-    }
 
     Expect(token::Token::IDENFR);
     
@@ -537,9 +439,11 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl() {
 // When Calling this function, tok_ is next of IDENFR.
 // After Calling this function, tok_ is ',' or ';'. 
 shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos, token::Token decl_type, int name_pos, const string& name) {
-    auto single_decl_node = make_shared<ast::SingleVarDeclNode>();
-    single_decl_node->type_ = NewBasicTypeNode(decl_type);
-    single_decl_node->name_ = make_shared<ast::IdentNode>(name);
+    auto single_var_position = file_->GetPositionByOffset(name_pos);
+    auto single_decl_node = make_shared<ast::SingleVarDeclNode>(single_var_position);
+
+    single_decl_node->type_ = NewBasicTypeNode(file_->GetPositionByOffset(decl_pos), decl_type);
+    single_decl_node->name_ = make_shared<ast::IdentNode>(single_var_position, name);
     single_decl_node->is_const_ = is_const;
 
     // get_array_dimension is called for parse array dimension.
@@ -558,11 +462,7 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
                 return 1;
             }
 
-            if (tok_ != token::Token::RBRACK) {
-                Error(pos_, "for array dimension, expect ]");
-                return 1;
-            }
-            Next();
+            Expect(token::Token::RBRACK);
         }
 
         return 0;
@@ -577,9 +477,9 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
     if (tok_ == token::Token::LBRACK) {
         vector<int> dimesions;
         if (get_array_dimension(dimesions) != 0) {
-            return make_shared<ast::BadDeclNode>();
+            return make_shared<ast::BadDeclNode>(single_var_position);
         }
-        single_decl_node->type_ = NewArrayTypeNode(decl_type, dimesions);
+        single_decl_node->type_ = NewArrayTypeNode(single_var_position, decl_type, dimesions);
         
         Expect(token::Token::ASSIGN);
 
@@ -588,11 +488,7 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
     }
 
     // token is assign.
-    if (tok_ != token::Token::ASSIGN) {
-        Error(pos_, "for var decl, expect '=' or ';' or ',' After identifr");
-        return make_shared<ast::BadDeclNode>();
-    }
-    Next();
+    Expect(token::Token::ASSIGN);
 
     single_decl_node->val_ = ParseExpr();
 
@@ -603,7 +499,7 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(int is_const, int decl_pos,
 // @param decl_type: INTTK or CHARTK.
 // e.g. '{ 1, 2, 3 }', '{{1,2,3}, {4,5,6}}';
 shared_ptr<ast::ExprNode> Parser::ParseCompositeLit(token::Token decl_type) {
-    auto composite_lit_node = make_shared<ast::CompositeLitNode>();
+    auto composite_lit_node = make_shared<ast::CompositeLitNode>(position_);
     stack<shared_ptr<ast::CompositeLitNode>> composite_lit_stack;
     composite_lit_stack.push(composite_lit_node);
     auto current_composite_lit_node = composite_lit_node;
@@ -612,33 +508,33 @@ shared_ptr<ast::ExprNode> Parser::ParseCompositeLit(token::Token decl_type) {
     Expect(token::Token::LBRACE);
     auto get_item = [&]() -> shared_ptr<ast::ExprNode> {
         if (tok_ == token::Token::INTCON || tok_ == token::Token::CHARCON) {
-            return make_shared<ast::BasicLitNode>(tok_, lit_);
+            return make_shared<ast::BasicLitNode>(position_, tok_, lit_);
         }
 
         if (tok_ == token::Token::IDENFR) {
-            return make_shared<ast::IdentNode>(lit_);
+            return make_shared<ast::IdentNode>(position_, lit_);
         }
 
         if (tok_ != token::Token::PLUS && tok_ != token::Token::MINU) {
-            return make_shared<ast::BadExprNode>();
+            return make_shared<ast::BadExprNode>(position_);
         }
         
         // get signed lit.
-        unary_expr_node = make_shared<ast::UnaryExprNode>(tok_, nullptr);
+        unary_expr_node = make_shared<ast::UnaryExprNode>(position_, tok_, nullptr);
         Next();
 
         if (tok_ == token::Token::INTCON) {
-            unary_expr_node->x_ = make_shared<ast::BasicLitNode>(tok_, lit_);
+            unary_expr_node->x_ = make_shared<ast::BasicLitNode>(position_, tok_, lit_);
             return unary_expr_node;
         }
         if (tok_ == token::Token::IDENFR) {
-            unary_expr_node->x_ = make_shared<ast::IdentNode>(lit_);
+            unary_expr_node->x_ = make_shared<ast::IdentNode>(position_, lit_);
             return unary_expr_node;
         }
 
 
         Error(pos_, "for unary expr, expect <int/char>");
-        return make_shared<ast::BadExprNode>();
+        return make_shared<ast::BadExprNode>(position_);
     };
     while (!composite_lit_stack.empty()) {
         switch (tok_) {
@@ -653,7 +549,7 @@ shared_ptr<ast::ExprNode> Parser::ParseCompositeLit(token::Token decl_type) {
             case token::Token::COMMA:
                 break;
             case token::LBRACE:
-                sub_composite_lit_node = make_shared<ast::CompositeLitNode>();
+                sub_composite_lit_node = make_shared<ast::CompositeLitNode>(position_);
                 current_composite_lit_node->items_.push_back(sub_composite_lit_node);
                 composite_lit_stack.push(current_composite_lit_node);
                 current_composite_lit_node = sub_composite_lit_node;
@@ -666,7 +562,7 @@ shared_ptr<ast::ExprNode> Parser::ParseCompositeLit(token::Token decl_type) {
                 break;
             default:
                 Error(pos_, "array define should be <int/char> ident = <int/char/identfr>;");
-                return make_shared<ast::BadExprNode>();
+                return make_shared<ast::BadExprNode>(position_);
         }
         // Point to next token.
         Next();
@@ -679,26 +575,14 @@ shared_ptr<ast::ExprNode> Parser::ParseCompositeLit(token::Token decl_type) {
 // When Calling this function, tok_ should be IFTK.
 // After Calling this function, tok_ will be next token of '}'.
 shared_ptr<ast::StmtNode> Parser::ParseIfStmt() {
-    auto ret_if_stmt_node = make_shared<ast::IfStmtNode>();
-    if (tok_ != token::Token::IFTK) {
-        Error(pos_, "for begin of if statement, expect if");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    auto ret_if_stmt_node = make_shared<ast::IfStmtNode>(position_);
 
-    if (tok_ != token::Token::LPARENT) {
-        Error(pos_, "for begin of if stament, expect if (");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::IFTK);
+    Expect(token::Token::LPARENT);
 
     ret_if_stmt_node->cond_ = ParseExpr();
 
-    if (tok_ != token::Token::RPARENT) {
-        Error(pos_, "for end of if statement, expect ')'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::RPARENT);
 
     ret_if_stmt_node->body_ = ParseStmt();
 
@@ -711,50 +595,25 @@ shared_ptr<ast::StmtNode> Parser::ParseIfStmt() {
 }
 
 shared_ptr<ast::StmtNode> Parser::ParseWhileStmt() {
-    auto ret_while_stmt_node = make_shared<ast::WhileStmtNode>();
-    if (tok_ != token::Token::WHILETK) {
-        Error(pos_, "for begin of while statement, expect while");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    auto ret_while_stmt_node = make_shared<ast::WhileStmtNode>(position_);
 
-    if (tok_ != token::Token::LPARENT) {
-        Error(pos_, "for begin of while statement, expect '('");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::WHILETK);
+    Expect(token::Token::LPARENT);
 
     ret_while_stmt_node->cond_ = ParseExpr();
 
-    if (tok_ != token::Token::RPARENT) {
-        Error(pos_, "for begin of while statement, expect ')'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::RPARENT);
 
-    ret_while_stmt_node->body_ = ParseBlockStmt();
-    if (tok_ != token::Token::RBRACE) {
-        Error(pos_, "for end of while statement, expect '}'");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    ret_while_stmt_node->body_ = ParseStmt();
 
     return ret_while_stmt_node;
 }
 
 shared_ptr<ast::StmtNode> Parser::ParseForStmt() {
-    auto ret_for_stmt_node = make_shared<ast::ForStmtNode>();
-    if (tok_ != token::Token::FORTK) {
-        Error(pos_, "for begin of for statement, expect for");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    auto ret_for_stmt_node = make_shared<ast::ForStmtNode>(position_);
 
-    if (tok_ != token::Token::LPARENT) {
-        Error(pos_, "for begin of for statement, expect '('");
-        return make_shared<ast::BadStmtNode>();
-    }
-    Next();
+    Expect(token::Token::FORTK);
+    Expect(token::Token::LPARENT);
 
     if (tok_ != token::Token::SEMICN) {
         ret_for_stmt_node->init_ = ParseSimpleStmt();
@@ -808,7 +667,7 @@ shared_ptr<ast::ExprNode> Parser::ParseBinaryExpr(int prec) {
         Next();
 
         auto right_expr_node = ParseBinaryExpr(tok_prec + 1);
-        left_expr_node = make_shared<ast::BinaryExprNode>(op_token, left_expr_node, right_expr_node);
+        left_expr_node = make_shared<ast::BinaryExprNode>(left_expr_node->Pos(), op_token, left_expr_node, right_expr_node);
     }
 }
 
@@ -821,9 +680,10 @@ shared_ptr<ast::ExprNode> Parser::ParseBinaryExpr(int prec) {
  */
 shared_ptr<ast::ExprNode> Parser::ParseUnaryExpr() {
     if (tok_ == token::Token::PLUS || tok_ == token::Token::MINU) {
+        auto op_position = position_;
         token::Token op = tok_;
         Next();
-        return make_shared<ast::UnaryExprNode>(op, ParseUnaryExpr());
+        return make_shared<ast::UnaryExprNode>(op_position, op, ParseUnaryExpr());
     }
 
     return ParsePrimaryExpr();
@@ -867,27 +727,23 @@ shared_ptr<ast::ExprNode> Parser::ParseOperand() {
     shared_ptr<ast::ExprNode> ret; 
     switch (tok_) {
         case token::Token::IDENFR:
-            ret = make_shared<ast::IdentNode>(lit_);
+            ret = make_shared<ast::IdentNode>(position_, lit_);
             Next();
             return ret;
         case token::Token::INTCON:
         case token::Token::CHARCON:
         case token::Token::STRCON:
-            ret = make_shared<ast::BasicLitNode>(tok_, lit_);
+            ret = make_shared<ast::BasicLitNode>(position_, tok_, lit_);
             Next();
             return ret;
         case token::Token::LPARENT:
             Next();
-            ret = make_shared<ast::ParenExprNode>(ParseExpr());
-            if (tok_ != token::Token::RPARENT) {
-                Error(pos_, "in operand start with '(', expect end with ')'");
-                return make_shared<ast::BadExprNode>();
-            }
-            Next();
+            ret = make_shared<ast::ParenExprNode>(position_, ParseExpr());
+            Expect(token::Token::RPARENT);
             return ret;
         default:
             Error(pos_, "in operand, expect <int/char/idenfr/string/'('>");
-            return make_shared<ast::BadExprNode>();
+            return make_shared<ast::BadExprNode>(position_);
     }
 }
 
@@ -898,18 +754,13 @@ shared_ptr<ast::ExprNode> Parser::ParseOperand() {
 //   start calling (arg1, arg2, arg3)  :=> tok_ is '('
 //   end calling (arg1, arg2, arg3)    :=> tok_ is ')'
 shared_ptr<ast::ExprNode> Parser::ParseCallExpr(const shared_ptr<ast::ExprNode>& func_name) {
-    if (tok_ != token::Token::LPARENT) {
-        Error(pos_, "in function call, expect '('");
-        return make_shared<ast::BadExprNode>();
-    }
-    Next();
+    auto func_call_expr_node = make_shared<ast::CallExprNode>(position_);
+    Expect(token::Token::LPARENT);
 
-    auto func_call_expr_node = make_shared<ast::CallExprNode>();
     func_call_expr_node->fun_ = func_name;
 
     while (tok_ != token::Token::RPARENT) {
-        auto arg_expr_node = ParseExpr();
-        func_call_expr_node->args_.push_back(arg_expr_node);
+        func_call_expr_node->args_.push_back(ParseExpr());
 
         if (tok_ != token::Token::COMMA) {
             break;
@@ -917,11 +768,7 @@ shared_ptr<ast::ExprNode> Parser::ParseCallExpr(const shared_ptr<ast::ExprNode>&
         Next();
     }
 
-    if (tok_ != token::Token::RPARENT) {
-        Error(pos_, "in function call, expect ')'");
-        return make_shared<ast::BadExprNode>();
-    }
-    Next();
+    Expect(token::Token::RPARENT);
 
     return func_call_expr_node;
 }
@@ -938,21 +785,12 @@ shared_ptr<ast::ExprNode> Parser::ParseCallExpr(const shared_ptr<ast::ExprNode>&
  * @return shared_ptr<ast::ExprNode> IndexExprNode for success, BadExprNode for fail.
  */
 shared_ptr<ast::ExprNode> Parser::ParseIndexExpr(const shared_ptr<ast::ExprNode>& array_name) {
-    if (tok_ == token::Token::RBRACK) {
-        Error(pos_, "for index expr, [] is not valid");
-        return make_shared<ast::BadExprNode>();
-    }
-    Next();
+    Expect(token::Token::LBRACK);
 
     vector<shared_ptr<ast::ExprNode>> index_expr_nodes;
     while (true) {
         index_expr_nodes.push_back(ParseExpr());
-
-        if (tok_ != token::Token::RBRACK) {
-            Error(pos_, "for end of array index, expect ]");
-            return make_shared<ast::BadExprNode>();
-        }
-        Next();
+        Expect(token::Token::RBRACK);
 
         if (tok_ != token::Token::LBRACK) {
             break;
@@ -962,7 +800,7 @@ shared_ptr<ast::ExprNode> Parser::ParseIndexExpr(const shared_ptr<ast::ExprNode>
 
     shared_ptr<ast::ExprNode> current_node = array_name;
     for (auto& index_expr_node : index_expr_nodes) {
-        current_node = make_shared<ast::IndexExprNode>(current_node, index_expr_node);
+        current_node = make_shared<ast::IndexExprNode>(current_node->Pos(), current_node, index_expr_node);
     }
 
     return current_node;
