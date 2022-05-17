@@ -43,21 +43,27 @@ shared_ptr<ast::TypeNode> NewArrayTypeNode(const token::Position& pos, token::To
 }
 
 
-Parser::Parser(const shared_ptr<token::File> &file, const string &src, const shared_ptr<ErrorHandler> &err) {
+Parser::Parser(
+    const shared_ptr<token::File> &file,
+    const string &src,
+    const shared_ptr<ErrorHandler> &err,
+    const shared_ptr<ec::ErrorReminder>& errors
+) {
     scanner_ = make_shared<Scanner>(file, src, err);
+    errors_ = errors;
     file_ = file;
     Next();
 }
 
 // Parse the source code and return the corresponding ast file tree.
-ast::FileNode Parser::Parse() {
+shared_ptr<ast::FileNode> Parser::Parse() {
     vector<shared_ptr<ast::DeclNode>> decls;
     while (tok_ != token::END_OF_FILE) {
         decls.push_back(ParseDecl());
     }
 
-    ast::FileNode ast_file_node;
-    ast_file_node.decl_.insert(ast_file_node.decl_.begin(), decls.begin(), decls.end());
+    shared_ptr<ast::FileNode> ast_file_node;
+    ast_file_node->decl_.insert(ast_file_node->decl_.begin(), decls.begin(), decls.end());
 
     return ast_file_node;
 }
@@ -65,16 +71,21 @@ ast::FileNode Parser::Parse() {
 /**
  * Error reports that the current token is unexpected.
  */
-void Parser::Error(const token::Position& pos, const string& msg) {
-    errors_.emplace_back(pos, msg);
+void Parser::Error(const token::Position& pos, ec::Type error_type, const string& msg) {
+    errors_->Add(pos, ec::Error(pos, error_type, msg));
+    exit(EXIT_SUCCESS);
 }
 
 void Parser::Expect(token::Token tok) {
-    auto pos = pos_;
     if (tok_ != tok) {
-        cout << pos.line << ":" << pos.column << ": " 
-             << "Expect " << token::GetTokenName(tok) << ", but got " << token::GetTokenName(tok_) << endl;
-        Error(pos, "expect " + token::GetTokenName(tok));
+        string msg = "expect " + token::GetTokenName(tok) + ", but get " + token::GetTokenName(tok_);
+        ec::Type error_type = (
+            tok == token::Token::SEMICN ? ec::Type::SEMICNExpected :
+            tok == token::Token::RBRACK ? ec::Type::RBRACKExpected :
+            tok == token::Token::RPARENT ? ec::Type::RPARENTExpected :
+            ec::Type::NotInHomeWork
+        );
+        Error(pos_, error_type, msg);
     }
 
     Next();
@@ -102,21 +113,21 @@ shared_ptr<ast::DeclNode> Parser::ParseDecl() {
     token::Token decl_type = tok_;
     Next();
     if (decl_type != token::Token::INTTK && decl_type != token::Token::CHARTK && decl_type != token::Token::VOIDTK) {
-        Error(pos_, "for begin of a declear, expect int, char, or void");
+        Error(pos_, ec::Type::NotInHomeWork, "for begin of a declear, expect int, char, or void");
         return make_shared<ast::BadDeclNode>(pos_);
     }
 
     auto name_pos = pos_;
     string name = lit_;
     if (tok_ != token::Token::MAINTK && tok_ != token::Token::IDENFR) {
-        Error(pos_, "for decl, expect <int/char/void> name");
+        Error(pos_, ec::Type::NotInHomeWork, "for decl, expect <int/char/void> name");
         return make_shared<ast::BadDeclNode>(pos_);
     }
     Next();
 
     if (tok_ == token::Token::LPARENT) {
         if (is_const) {
-            Error(pos_, "const function result type not supported");
+            Error(pos_, ec::Type::NotInHomeWork, "const function result type not supported");
             return make_shared<ast::BadDeclNode>(pos_);
         }
         return ParseFuncDecl(decl_pos, decl_type, name_pos, name);
@@ -162,7 +173,7 @@ shared_ptr<ast::FieldListNode> Parser::ParseFieldList() {
     while(true) {
         // Get input type.
         if (tok_ != token::Token::INTTK && tok_ != token::Token::CHARTK) {
-            Error(pos_, "for paramlist, expect <int/char> indetifier");
+            Error(pos_, ec::Type::NotInHomeWork, "for paramlist, expect <int/char> indetifier");
         }
         auto param_type = NewBasicTypeNode(pos_, tok_);
         Next();
@@ -289,7 +300,7 @@ shared_ptr<ast::StmtNode> Parser::ParseSimpleStmt() {
         case token::Token::SEMICN:
             return make_shared<ast::ExprStmtNode>(x->Pos(), x);
         default:
-            Error(pos_, "for simple stmt, after first expression, expect '=' or ';'");
+            Error(pos_, ec::Type::NotInHomeWork, "for simple stmt, after first expression, expect '=' or ';'");
             return make_shared<ast::BadStmtNode>(x->Pos());
     }
 }
@@ -306,7 +317,7 @@ shared_ptr<ast::StmtNode> Parser::ParseScanStmt() {
     Expect(token::Token::LPARENT);
 
     if (tok_ != token::Token::IDENFR) {
-        Error(pos_, "for expr of scanf stmt, expect indetifier");
+        Error(pos_, ec::Type::NotInHomeWork, "for expr of scanf stmt, expect indetifier");
         scanf_stmt->var_ = make_shared<ast::BadExprNode>(pos_);
     } else {
         scanf_stmt->var_ = make_shared<ast::IdentNode>(pos_, lit_);
@@ -404,7 +415,7 @@ shared_ptr<ast::StmtNode> Parser::ParseCaseStmt() {
         Next();
         case_stmt_node->cond_ = nullptr;
     } else {
-        Error(pos_, "for begin of case stmt, expect <case/default>");
+        Error(pos_, ec::Type::NotInHomeWork, "for begin of case stmt, expect <case/default>");
         // FIXME: what todo?
     }
 
@@ -430,7 +441,7 @@ shared_ptr<ast::DeclNode> Parser::ParseVarDecl() {
 
     token::Token decl_type = tok_;
     if (decl_type != token::Token::CHARTK && decl_type != token::Token::INTTK) {
-        Error(pos_, "for begin of a declear, expect int or char");
+        Error(pos_, ec::Type::NotInHomeWork, "for begin of a declear, expect int or char");
         return make_shared<ast::BadDeclNode>(pos_);
     }
     Next();
@@ -471,7 +482,7 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(
                 dimesions.push_back(atoi(lit_.c_str()));
                 Next();
             } else {
-                Error(pos_, "for array dimension, expect [int]");
+                Error(pos_, ec::Type::NotInHomeWork, "for array dimension, expect [int]");
                 return 1;
             }
 
@@ -494,6 +505,10 @@ shared_ptr<ast::DeclNode> Parser::ParseSingleVarDecl(
         }
         single_decl_node->type_ = NewArrayTypeNode(name_pos, decl_type, dimesions);
         
+        if (tok_ == token::Token::SEMICN || tok_ == token::Token::COMMA) {
+            return single_decl_node;
+        }
+
         Expect(token::Token::ASSIGN);
 
         single_decl_node->val_ = ParseCompositeLit(decl_type);
@@ -546,7 +561,7 @@ shared_ptr<ast::ExprNode> Parser::ParseCompositeLit(token::Token decl_type) {
         }
 
 
-        Error(pos_, "for unary expr, expect <int/char>");
+        Error(pos_, ec::Type::NotInHomeWork, "for unary expr, expect <int/char>");
         return make_shared<ast::BadExprNode>(pos_);
     };
     while (!composite_lit_stack.empty()) {
@@ -574,7 +589,7 @@ shared_ptr<ast::ExprNode> Parser::ParseCompositeLit(token::Token decl_type) {
                 }
                 break;
             default:
-                Error(pos_, "array define should be <int/char> ident = <int/char/identfr>;");
+                Error(pos_, ec::Type::NotInHomeWork, "array define should be <int/char> ident = <int/char/identfr>;");
                 return make_shared<ast::BadExprNode>(pos_);
         }
         // Point to next token.
@@ -755,7 +770,7 @@ shared_ptr<ast::ExprNode> Parser::ParseOperand() {
             Expect(token::Token::RPARENT);
             return ret;
         default:
-            Error(pos_, "in operand, expect <int/char/idenfr/string/'('>");
+            Error(pos_, ec::Type::NotInHomeWork, "in operand, expect <int/char/idenfr/string/'('>");
             return make_shared<ast::BadExprNode>(pos_);
     }
 }
@@ -823,7 +838,5 @@ shared_ptr<ast::ExprNode> Parser::ParseIndexExpr(const shared_ptr<ast::ExprNode>
 
 // Report all parse errors.
 void Parser::ReportErrors() {
-    for (auto &err : errors_) {
-        cerr << err.pos.line << ":" << err.pos.column << ": " << err.message << endl;
-    }
+    cerr << errors_->ToString() << endl;
 }

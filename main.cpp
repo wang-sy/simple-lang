@@ -4,6 +4,8 @@
 
 #include "scanner/scanner.h"
 #include "parser/parser.h"
+#include "error.h"
+#include "check/check.h"
 
 using namespace std;
 
@@ -77,11 +79,12 @@ void ParsingMain() {
     test_file->size = (int)txt.size();
 
     auto err_handler = make_shared<StdErrHandler>();
+    auto error_reporter = make_shared<ec::ErrorReminder>(true, cerr);
 
-    Parser parser(test_file, txt, err_handler);
+    Parser parser(test_file, txt, err_handler, error_reporter);
     auto ast_file = parser.Parse();
 
-    cout << ast_file.ToString() << endl;
+    cout << ast_file->ToString() << endl;
 
     parser.ReportErrors();
 }
@@ -93,13 +96,17 @@ void ErrorMain() {
     test_file->size = (int)txt.size();
 
     auto err_handler = make_shared<StdErrHandler>();
+    auto error_reporter = make_shared<ec::ErrorReminder>(true, cerr);
 
-    Parser parser(test_file, txt, err_handler);
-    auto ast_file = parser.Parse();
+    Parser parser(test_file, txt, err_handler, error_reporter);
+
+    check::Checker c(parser.Parse(), error_reporter);
+
+    c.Check();
     
-    cout << ast_file.ToString() << endl;
+    // cout << ast_file.ToString() << endl;
 
-    parser.ReportErrors();
+    // parser.ReportErrors();
 }
 
 int main() {

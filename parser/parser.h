@@ -1,5 +1,6 @@
 #pragma once
 
+#include "error.h"
 #include "token/position.h"
 #include "scanner/scanner.h"
 #include "ast/ast.h"
@@ -19,13 +20,18 @@ public:
 // the corresponding ast file tree.
 class Parser {
 public:
-    Parser(const shared_ptr<token::File> &file, const string &src, const shared_ptr<ErrorHandler> &err);
+    Parser(
+        const shared_ptr<token::File> &file,
+        const string &src,
+        const shared_ptr<ErrorHandler> &err,
+        const shared_ptr<ec::ErrorReminder>& errors
+    );
 
     // Report all parse errors.
     void ReportErrors();
 
     // Parse the source code and return the corresponding ast file tree.
-    ast::FileNode Parse();
+    shared_ptr<ast::FileNode> Parse();
 private:
     /**
      * Next advance to the next token.
@@ -35,7 +41,7 @@ private:
     /**
      * Error reports that the current token is unexpected.
      */
-    void Error(const token::Position& pos, const string& msg);
+    void Error(const token::Position& pos, ec::Type error_type, const string& msg);
 
     void Expect(token::Token tok);
 
@@ -140,5 +146,5 @@ private:
     
     shared_ptr<Scanner> scanner_;
     shared_ptr<token::File> file_;
-    vector<ParserError> errors_;
+    shared_ptr<ec::ErrorReminder> errors_;
 };

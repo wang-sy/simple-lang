@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <iostream>
 
 #include "token/position.h"
 
@@ -9,7 +10,7 @@
 namespace ec {
 enum Type {
     // char or string literal should not be empty.
-    EmptyCharOrStringLit = 1,
+    EmptyCharOrStringLit,
     // define same identifier twice.
     Redefine,
     // use undeclared identifier.
@@ -40,6 +41,7 @@ enum Type {
     SwitchTypeError,
     // default case should be the last one.
     DefaultExpected,
+    NotInHomeWork,
 };
 
 class Error {
@@ -51,7 +53,15 @@ public:
     Type type() const { return type_; }
     const token::Position& pos() const { return pos_; }
     const string& msg() const { return msg_; }
-    const string ToString() const {return pos_.ToString() + ": " + msg_;}
+    const string ToString() const {
+        string res = to_string(pos_.line) + " ";
+        res.push_back('a' + type_);
+        return res;
+        // string res = "["; res.push_back('a' + type_); res += "]";
+        // res += " => " + pos_.ToString();
+        // res += " :: " + msg_;
+        // return res;
+    }
 public:
     token::Position pos_;
     Type type_;
@@ -62,8 +72,23 @@ public:
 class ErrorReminder {
 public:
     ErrorReminder() = default;
-    void Add(const token::Position& pos, const Error& err) {errors_[pos] = err;}
+    ErrorReminder(bool report_on_add_, ostream& out) : report_on_add_(report_on_add_), out_(out) {}
+    string ToString() const {
+        string result;
+        for (const auto& error : errors_) {
+            result += error.second.ToString() + "\n";
+        }
+        return result;
+    }
+    void Add(const token::Position& pos, const Error& err) {
+        errors_[pos] = err;
+        if (report_on_add_) {
+            out_ << err.ToString() << std::endl;
+        }
+    }
 public:
     std::map<token::Position, Error> errors_;
+    bool report_on_add_ = false;
+    ostream& out_;
 };
 }

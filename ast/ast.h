@@ -3,7 +3,9 @@
 #include <string>
 #include <memory>
 #include <vector>
+
 #include "token/token.h"
+#include "token/position.h"
 
 using namespace std;
 
@@ -975,6 +977,7 @@ class FileNode {
 public:
     shared_ptr <IdentNode> name_{};
     vector <shared_ptr<DeclNode>> decl_{};
+    FileNode() = default;
     string ToString() const {
         string ret = "<FileNode>";
         ret += "<name>" + (name_ == nullptr ? "" : name_->ToString()) + "</name>";
