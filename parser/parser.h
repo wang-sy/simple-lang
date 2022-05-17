@@ -35,9 +35,9 @@ private:
     /**
      * Error reports that the current token is unexpected.
      */
-    void Error(int pos, const string& msg);
+    void Error(const token::Position& pos, const string& msg);
 
-    int Expect(token::Token tok);
+    void Expect(token::Token tok);
 
     // ParserDecl is called for parse decl.
     // e.g. 'int a', 'int a = 1', 'int a, b, c', 'int main() { ... }';
@@ -45,7 +45,12 @@ private:
     
     // ParseFuncDecl is called for parse function decl.
     // e.g. 'int main() { ... }';
-    shared_ptr<ast::DeclNode> ParseFuncDecl(int decl_pos, token::Token decl_type, int name_pos, const string& name);
+    shared_ptr<ast::DeclNode> ParseFuncDecl(
+        const token::Position& decl_pos,
+        token::Token decl_type,
+        const token::Position& name_pos,
+        const string& name
+    );
 
     // ParseVarDecl is called for parse variable decl.
     // In this function, we start from token 'const' or 'int / char'.
@@ -55,11 +60,23 @@ private:
     // ParseVarDecl is called for parse variable decl.
     // In this function, const, decl_type and name are all parsed.
     // e.g. 'int a', 'int a = 1', 'int a, b, c';
-    shared_ptr<ast::DeclNode> ParseVarDecl(int decl_pos, bool is_const, token::Token decl_type, int name_pos, const string& name);
+    shared_ptr<ast::DeclNode> ParseVarDecl(
+        const token::Position& decl_pos,
+        bool is_const,
+        token::Token decl_type,
+        const token::Position& name_pos,
+        const string& name
+    );
 
     // ParseSingleVarDecl Get Single Var Decl.
     // Var may be 'int', 'char', 'array' type.
-    shared_ptr<ast::DeclNode> ParseSingleVarDecl(int is_const, int decl_pos, token::Token decl_type, int name_pos, const string& name);
+    shared_ptr<ast::DeclNode> ParseSingleVarDecl(
+        const token::Position& decl_pos,
+        int is_const,
+        token::Token decl_type,
+        const token::Position& name_pos,
+        const string& name
+    );
 
     // ParseCompositeLit is called for parse composite literal.
     // @param decl_type: INTTK or CHARTK.
@@ -119,8 +136,7 @@ private:
     // Next token.
     token::Token tok_;
     string lit_;
-    int pos_;
-    token::Position position_;
+    token::Position pos_;
     
     shared_ptr<Scanner> scanner_;
     shared_ptr<token::File> file_;
