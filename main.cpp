@@ -86,7 +86,23 @@ void ParsingMain() {
     parser.ReportErrors();
 }
 
+void ErrorMain() {
+    auto test_file = make_shared<token::File>();
+    test_file->name = "testfile.txt";
+    string txt = GetInputFile(test_file->name);
+    test_file->size = (int)txt.size();
+
+    auto err_handler = make_shared<StdErrHandler>();
+
+    Parser parser(test_file, txt, err_handler);
+    auto ast_file = parser.Parse();
+    
+    cout << ast_file.ToString() << endl;
+
+    parser.ReportErrors();
+}
+
 int main() {
-    ParsingMain();
+    ErrorMain();
     return 0;
 }
