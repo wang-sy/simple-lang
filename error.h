@@ -81,13 +81,23 @@ public:
         return result;
     }
     void Add(const token::Position& pos, const Error& err) {
-        errors_[pos] = err;
+        if (pos.offset == token::npos.offset) {
+            npos_errors_.push_back(err);
+        } else {
+            errors_[pos] = err;
+        }
+
         if (report_on_add_) {
             out_ << err.ToString() << std::endl;
         }
     }
+    void Emplace(const token::Position& pos, const Type& typ, const string& msg) {
+        Add(pos, Error(pos, typ, msg));
+    }
+
 public:
     std::map<token::Position, Error> errors_;
+    std::vector<Error> npos_errors_;
     bool report_on_add_ = false;
     ostream& out_;
 };

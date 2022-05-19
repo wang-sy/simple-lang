@@ -1,4 +1,5 @@
 #include "check/check.h"
+#include "token/position.h"
 
 namespace check {
 Checker::Checker(const shared_ptr<ast::FileNode>& file_node, const shared_ptr<ec::ErrorReminder>& error_reminder)
@@ -22,6 +23,7 @@ void Checker::CheckRootDecl(const shared_ptr<ast::DeclNode>& decl) {
             return;
         case ast::FuncDecl:
             CheckFuncDeclNode(dynamic_pointer_cast<ast::FuncDeclNode>(decl));
+            return;
         default:
             return;
     }
@@ -34,7 +36,10 @@ void Checker::CheckRootDecl(const shared_ptr<ast::DeclNode>& decl) {
  * @param decl var decl node. 
  */
 void Checker::CheckVarDeclNode(const shared_ptr<ast::VarDeclNode>& decl) {
-
+    if (decl == nullptr || decl->Type() != ast::VarDecl) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckVarDeclNode: decl is nullptr or not var decl.");
+        return;
+    }
 }
 
 /**

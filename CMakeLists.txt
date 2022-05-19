@@ -10,4 +10,4 @@ add_compile_options(-g)   #添加语句
 
 include_directories(.)
 
-add_executable(simple_lang main.cpp parser/parser.cpp scanner/scanner.cpp token/token.cpp token/position.cpp check/check.cpp)
+add_executable(simple_lang main.cpp parser/parser.cpp scanner/scanner.cpp token/token.cpp token/position.cpp check/check.cpp parser/var_table.cpp)
