@@ -54,13 +54,13 @@ public:
     const token::Position& pos() const { return pos_; }
     const string& msg() const { return msg_; }
     const string ToString() const {
-        string res = to_string(pos_.line) + " ";
-        res.push_back('a' + type_);
-        return res;
-        // string res = "["; res.push_back('a' + type_); res += "]";
-        // res += " => " + pos_.ToString();
-        // res += " :: " + msg_;
+        // string res = to_string(pos_.line) + " ";
+        // res.push_back('a' + type_);
         // return res;
+        string res = "["; res.push_back('a' + type_); res += "]";
+        res += " => " + pos_.ToString();
+        res += " :: " + msg_;
+        return res;
     }
 public:
     token::Position pos_;

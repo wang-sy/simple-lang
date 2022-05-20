@@ -329,6 +329,20 @@ public:
     shared_ptr<TypeNode> item_{};
 };
 
+class StringTypeNode : public TypeNode {
+public:
+    explicit StringTypeNode(const token::Position& pos) : TypeNode(pos) {}
+    StringTypeNode() = default;
+    ~StringTypeNode() override = default;
+    NodeType Type() const override { return NodeType::StringType; };
+    string ToString() const override {
+        string ret = "<StringTypeNode>";
+        ret += "<pos>" + pos_.ToString() + "</pos>";
+        ret += "</StringTypeNode>";
+        return ret;
+    }
+};
+
 // ====================================================================
 // ======================Expr Node=====================================
 // ====================================================================

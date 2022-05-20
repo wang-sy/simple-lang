@@ -62,7 +62,7 @@ shared_ptr<ast::FileNode> Parser::Parse() {
         decls.push_back(ParseDecl());
     }
 
-    shared_ptr<ast::FileNode> ast_file_node;
+    auto ast_file_node = make_shared<ast::FileNode>();
     ast_file_node->decl_.insert(ast_file_node->decl_.begin(), decls.begin(), decls.end());
 
     return ast_file_node;
