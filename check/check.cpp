@@ -11,6 +11,18 @@ Checker::Checker(const shared_ptr<ast::FileNode>& file_node, const shared_ptr<ec
     var_table_ = make_shared<VarTable>();
 }
 
+shared_ptr<ast::TypeNode> CreateBasicTypeNodeByNodeType(const ast::NodeType& typ) {
+    if (typ == ast::IntType) {
+        return make_shared<ast::IntTypeNode>();
+    } else if (typ == ast::CharType) {
+        return make_shared<ast::CharTypeNode>();
+    } else if (typ == ast::StringType) {
+        return make_shared<ast::StringTypeNode>();
+    }
+
+    return make_shared<ast::BadTypeNode>();
+}
+
 void Checker::Check() {
     for (const auto& decl: ast_->decl_) {
         if (decl->Type() == ast::VarDecl) {
@@ -84,7 +96,7 @@ void Checker::CheckArrayVarDeclNode(const shared_ptr<ast::SingleVarDeclNode> &de
     auto get_demissions_and_basic_token = [&](
         const shared_ptr<ast::TypeNode>& arr,
         vector<int>* demissions,
-        token::Token* tok
+        shared_ptr<ast::TypeNode>* typ
     ) {
         shared_ptr<ast::TypeNode> cur_demission = arr;
         while(true) {
@@ -92,13 +104,12 @@ void Checker::CheckArrayVarDeclNode(const shared_ptr<ast::SingleVarDeclNode> &de
                 auto cur_demission_arr = dynamic_pointer_cast<ast::ArrayTypeNode>(cur_demission);
                 demissions->push_back(cur_demission_arr->size_);
                 cur_demission = cur_demission_arr->item_;
-            } else if (cur_demission->Type() == ast::BasicLit) {
-                auto cur_demission_basic = dynamic_pointer_cast<ast::BasicLitNode>(cur_demission);
-                *tok = cur_demission_basic->tok_;
-                break;
-            } else {
-                errors_->Emplace(cur_demission->Pos(), ec::NotInHomeWork, "for array var decl, expect array val");
+            } else if (cur_demission->Type() == ast::BadType) {
+                errors_->Emplace(decl->Pos(), ec::NotInHomeWork, "for array var decl, expect array type");
                 return;
+            } else {
+                *typ = CreateBasicTypeNodeByNodeType(cur_demission->Type());
+                break;
             }
         }
     };
@@ -141,12 +152,12 @@ void Checker::CheckArrayVarDeclNode(const shared_ptr<ast::SingleVarDeclNode> &de
     }
 
     vector<int> decl_demissions, composite_lit_demissions;
-    token::Token decl_basic_token, composite_lit_basic_token;
+    shared_ptr<ast::TypeNode> decl_basic_token, composite_lit_basic_token;
 
     get_demissions_and_basic_token(decl->type_, &decl_demissions, &decl_basic_token);
     get_demissions_and_basic_token(composite_lit_type, &composite_lit_demissions, &composite_lit_basic_token);
 
-    if (decl_basic_token != composite_lit_basic_token) {
+    if (decl_basic_token->Type() != composite_lit_basic_token->Type()) {
         errors_->Emplace(decl->val_->Pos(), ec::CompositeLitSizeError, "for array var decl, decl basic type and composite lit type neq");
         return;
     }
@@ -291,10 +302,6 @@ void Checker::CheckCompositeLitNodeAndGetType(const shared_ptr<ast::CompositeLit
     vector<int> demissions;
     pair<bool, token::Token> get_basic_type_token;
     while(!cur_demission_nodes.empty()) {
-        cout << "CurDemission Nodes::::::::" << endl;
-        for (const auto& n: cur_demission_nodes) {
-            cout << n->ToString() << endl;
-        }
         auto cur_demission_first_node = cur_demission_nodes.front();
         shared_ptr<ast::CompositeLitNode> cur_demission_ref_composite_lit_node;
         shared_ptr<ast::BasicLitNode> cur_demission_ref_basic_lit_node;

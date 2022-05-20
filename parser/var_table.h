@@ -15,10 +15,10 @@ public:
     public:
         Identifier();
         Identifier(int unique_id, const string& name, const shared_ptr<ast::TypeNode>& type, bool is_const=false);
-        int unique_id{};
-        bool is_const{};
-        string name{};
-        shared_ptr<ast::TypeNode> type{};
+        int unique_id;
+        string name;
+        shared_ptr<ast::TypeNode> type;
+        bool is_const;
     };
 public:
     VarTable();
