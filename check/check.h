@@ -116,6 +116,90 @@ private:
      */
     void CheckBinaryExprNodeAndGetType(const shared_ptr<ast::BinaryExprNode>& expr, shared_ptr<ast::TypeNode>* typ);
 
+    /**
+     * @brief CheckStmt check stmt node.
+     * 
+     * @param stmt 
+     */
+    void CheckStmt(const shared_ptr<ast::StmtNode>& stmt);
+
+    /**
+     * @brief CheckDeclStmt check decl stmt node.
+     * 
+     * @param decl_stmt decl stmt node.
+     */
+    void CheckDeclStmt(const shared_ptr<ast::DeclStmtNode>& decl_stmt);
+
+    /**
+     * @brief CheckExprStmt check expr stmt node.
+     * 
+     * @param expr_stmt expr stmt node.
+     */
+    void CheckExprStmt(const shared_ptr<ast::ExprStmtNode>& expr_stmt);
+
+    /**
+     * @brief CheckAssignStmt check assign stmt node.
+     * 
+     * @param assign_stmt assign stmt node.
+     */
+    void CheckAssignStmt(const shared_ptr<ast::AssignStmtNode>& assign_stmt);
+
+    /**
+     * @brief CheckReturnStmt check return stmt node.
+     * 
+     * @param return_stmt return stmt node.
+     */
+    void CheckReturnStmt(const shared_ptr<ast::ReturnStmtNode>& return_stmt);
+
+    /**
+     * @brief CheckBlockStmt check block stmt node.
+     * 
+     * @param block_stmt block stmt node.
+     */
+    void CheckBlockStmt(const shared_ptr<ast::BlockStmtNode>& block_stmt);
+    
+    /**
+     * @brief CheckIfStmt check if stmt node.
+     * 
+     * @param if_stmt if stmt node.
+     */
+    void CheckIfStmt(const shared_ptr<ast::IfStmtNode>& if_stmt);
+
+    /**
+     * @brief CheckSwitchStmt check switch stmt node.
+     * 
+     * @param switch_stmt switch stmt node.
+     */
+    void CheckSwitchStmt(const shared_ptr<ast::SwitchStmtNode>& switch_stmt);
+
+    /**
+     * @brief CheckForStmt check for stmt node.
+     * 
+     * @param for_stmt for stmt node.
+     */
+    void CheckForStmt(const shared_ptr<ast::ForStmtNode>& for_stmt);
+
+    /**
+     * @brief CheckWhileStmt check while stmt node.
+     * 
+     * @param while_stmt while stmt node.
+     */
+    void CheckWhileStmt(const shared_ptr<ast::WhileStmtNode>& while_stmt);
+
+    /**
+     * @brief CheckScanStmt check scan stmt node.
+     * 
+     * @param scan_stmt scan stmt node.
+     */
+    void CheckScanStmt(const shared_ptr<ast::ScanStmtNode>& scan_stmt);
+
+    /**
+     * @brief CheckPrintfStmt check printf stmt node.
+     * 
+     * @param printf_stmt printf stmt node.
+     */
+    void CheckPrintfStmt(const shared_ptr<ast::PrintfStmtNode>& printf_stmt);
+
     shared_ptr<ast::FileNode> ast_;
 
     shared_ptr<VarTable> var_table_;

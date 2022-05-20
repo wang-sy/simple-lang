@@ -89,7 +89,72 @@ void Checker::CheckSingleVarDeclNode(const shared_ptr<ast::SingleVarDeclNode> &d
  * @param decl func decl node.
  */
 void Checker::CheckFuncDeclNode(const shared_ptr<ast::FuncDeclNode>& decl) {
+    if (decl == nullptr || decl->Type() != ast::FuncDecl) {
+        errors_->Emplace(decl->Pos(), ec::Type::NotInHomeWork, "for funcdecl node, node type error");
+        return;
+    }
 
+    if (decl->name_ == nullptr || var_table_->IsVarExistedInCurrentCodeBlock(decl->name_->name_)) {
+        errors_->Emplace(decl->Pos(), ec::Type::Redefine, "for funcdecl, func name already defined");
+        return;
+    }
+
+    var_table_->AddFunc(decl->name_->name_, decl);
+    var_table_->CreateCodeBlock();
+
+    // check func params.
+    if (decl->params_ == nullptr || decl->params_->Type() != ast::FieldList) {
+        errors_->Emplace(decl->Pos(), ec::Type::NotInHomeWork, "for funcdecl params, expect field_list");
+        return;
+    }
+
+    for (auto& field: decl->params_->fields_) {
+        if (field == nullptr || field->Type() != ast::Field) {
+            errors_->Emplace(field->Pos(), ec::Type::NotInHomeWork, "for funcdecl field_list, expect field");
+            return;
+        }
+        
+        auto field_decl = dynamic_pointer_cast<ast::FieldNode>(field);
+        if (field_decl->name_ == nullptr || var_table_->IsVarExistedInCurrentCodeBlock(field_decl->name_->name_)) {
+            errors_->Emplace(field_decl->Pos(), ec::Type::Redefine, "for funcdecl field, var name already defined");
+            return;
+        }
+        var_table_->AddVar(field_decl->name_->name_, CreateBasicTypeNodeByNodeType(field_decl->type_->Type()));
+    }
+
+    // check body.
+    if (decl->body_ == nullptr || decl->body_->Type() != ast::BlockStmt) {
+        errors_->Emplace(decl->Pos(), ec::Type::NotInHomeWork, "for funcdecl body, expect block_stmt");
+        return;
+    }
+    auto block_stmt_body = dynamic_pointer_cast<ast::BlockStmtNode>(decl->body_);
+    
+    // return type check.
+    bool have_return = false;
+    for (const auto& stmt_node:block_stmt_body->stmts_) {
+        if(stmt_node == nullptr || stmt_node->Type() != ast::ReturnStmt) {
+            continue;
+        }
+
+        auto return_stmt = dynamic_pointer_cast<ast::ReturnStmtNode>(stmt_node);
+        if (return_stmt->Type() != decl->type_->Type()) {
+            errors_->Emplace(return_stmt->Pos(), ec::Type::NotInHomeWork, "for funcdecl return type, expect return type");
+            return;
+        }
+
+        have_return = true;
+    }
+
+    if (decl->type_->Type() != ast::VoidType && !have_return) {
+        cout << decl->type_->Type() << endl;
+        errors_->Emplace(decl->Pos(), ec::Type::NotInHomeWork, "for funcdecl return type, expect void or return stmt");
+        return;
+    }
+
+    // check body.
+    CheckBlockStmt(dynamic_pointer_cast<ast::BlockStmtNode>(decl->body_));
+
+    var_table_->DestroyCodeBlock();
 }
 
 void Checker::CheckArrayVarDeclNode(const shared_ptr<ast::SingleVarDeclNode> &decl) {
@@ -404,6 +469,159 @@ PostCheckProcess:
     }
 }
 
+
+/**
+ * @brief CheckStmt check stmt node.
+ * 
+ * @param stmt stmt node.
+ */
+void Checker::CheckStmt(const shared_ptr<ast::StmtNode>& stmt) {
+    if (stmt == nullptr) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckStmt: stmt is nullptr");
+        return;
+    }
+
+    switch (stmt->Type()) {
+        case ast::DeclStmt:
+            CheckDeclStmt(dynamic_pointer_cast<ast::DeclStmtNode>(stmt));
+            return;
+        case ast::ExprStmt:
+            CheckExprStmt(dynamic_pointer_cast<ast::ExprStmtNode>(stmt));
+            return;
+        case ast::AssignStmt:
+            CheckAssignStmt(dynamic_pointer_cast<ast::AssignStmtNode>(stmt));
+            return;
+        case ast::ReturnStmt:
+            CheckReturnStmt(dynamic_pointer_cast<ast::ReturnStmtNode>(stmt));
+            return;
+        case ast::BlockStmt:
+            var_table_->CreateCodeBlock();
+            CheckBlockStmt(dynamic_pointer_cast<ast::BlockStmtNode>(stmt));
+            var_table_->DestroyCodeBlock();
+            return;
+        case ast::IfStmt:
+            CheckIfStmt(dynamic_pointer_cast<ast::IfStmtNode>(stmt));
+            return;
+        case ast::SwitchStmt:
+            CheckSwitchStmt(dynamic_pointer_cast<ast::SwitchStmtNode>(stmt));
+            return;
+        case ast::ForStmt:
+            CheckForStmt(dynamic_pointer_cast<ast::ForStmtNode>(stmt));
+            return;
+        case ast::WhileStmt:
+            CheckWhileStmt(dynamic_pointer_cast<ast::WhileStmtNode>(stmt));
+            return;
+        case ast::ScanStmt:
+            CheckScanStmt(dynamic_pointer_cast<ast::ScanStmtNode>(stmt));
+            return;
+        case ast::PrintfStmt:
+            CheckPrintfStmt(dynamic_pointer_cast<ast::PrintfStmtNode>(stmt));
+            return;
+        default:
+            errors_->Emplace(stmt->Pos(), ec::Type::NotInHomeWork, "CheckStmt: stmt type error");
+            return;
+    }
+}
+
+/**
+ * @brief CheckDeclStmt check decl stmt node.
+ * 
+ * @param decl_stmt decl stmt node.
+ */
+void Checker::CheckDeclStmt(const shared_ptr<ast::DeclStmtNode>& decl_stmt) {
+
+}
+
+/**
+ * @brief CheckExprStmt check expr stmt node.
+ * 
+ * @param expr_stmt expr stmt node.
+ */
+void Checker::CheckExprStmt(const shared_ptr<ast::ExprStmtNode>& expr_stmt) {
+
+}
+
+/**
+ * @brief CheckAssignStmt check assign stmt node.
+ * 
+ * @param assign_stmt assign stmt node.
+ */
+void Checker::CheckAssignStmt(const shared_ptr<ast::AssignStmtNode>& assign_stmt) {
+
+}
+
+/**
+ * @brief CheckReturnStmt check return stmt node.
+ * 
+ * @param return_stmt return stmt node.
+ */
+void Checker::CheckReturnStmt(const shared_ptr<ast::ReturnStmtNode>& return_stmt) {
+
+}
+
+/**
+ * @brief CheckBlockStmt check block stmt node.
+ * 
+ * @param block_stmt block stmt node.
+ */
+void Checker::CheckBlockStmt(const shared_ptr<ast::BlockStmtNode>& block_stmt) {
+
+}
+
+/**
+ * @brief CheckIfStmt check if stmt node.
+ * 
+ * @param if_stmt if stmt node.
+ */
+void Checker::CheckIfStmt(const shared_ptr<ast::IfStmtNode>& if_stmt) {
+
+}
+
+/**
+ * @brief CheckSwitchStmt check switch stmt node.
+ * 
+ * @param switch_stmt switch stmt node.
+ */
+void Checker::CheckSwitchStmt(const shared_ptr<ast::SwitchStmtNode>& switch_stmt) {
+
+}
+
+/**
+ * @brief CheckForStmt check for stmt node.
+ * 
+ * @param for_stmt for stmt node.
+ */
+void Checker::CheckForStmt(const shared_ptr<ast::ForStmtNode>& for_stmt) {
+
+}
+
+/**
+ * @brief CheckWhileStmt check while stmt node.
+ * 
+ * @param while_stmt while stmt node.
+ */
+void Checker::CheckWhileStmt(const shared_ptr<ast::WhileStmtNode>& while_stmt) {
+
+}
+
+/**
+ * @brief CheckScanStmt check scan stmt node.
+ * 
+ * @param scan_stmt scan stmt node.
+ */
+void Checker::CheckScanStmt(const shared_ptr<ast::ScanStmtNode>& scan_stmt) {
+
+}
+
+/**
+ * @brief CheckPrintfStmt check printf stmt node.
+ * 
+ * @param printf_stmt printf stmt node.
+ */
+void Checker::CheckPrintfStmt(const shared_ptr<ast::PrintfStmtNode>& printf_stmt) {
+
+}
+
 void Checker::CheckIndexExprNodeAndGetType(const shared_ptr<ast::IndexExprNode> &expr, shared_ptr<ast::TypeNode> *typ) {
 
 }
@@ -415,8 +633,6 @@ void Checker::CheckCallExprNodeAndGetType(const shared_ptr<ast::CallExprNode> &e
 void Checker::CheckUnaryExprNodeAndGetType(const shared_ptr<ast::UnaryExprNode> &expr, shared_ptr<ast::TypeNode> *typ) {
 
 }
-
-
 
 /**
  * @brief CheckBinaryExprNodeAndGetType check binary expr node and get type.

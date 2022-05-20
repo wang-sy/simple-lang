@@ -30,6 +30,12 @@ public:
     // DestroyCodeBlock destroy a code block.
     void DestroyCodeBlock();
 
+    // AddFunc add a function.
+    void AddFunc(const string& name, const shared_ptr<ast::FuncDeclNode>& func_decl);
+
+    // GetFunc get a function node.
+    void GetFunc(const string& name, shared_ptr<ast::FuncDeclNode>* func_decl);
+
     // AddVar add a variable to current code block.
     void AddVar(const string& name, const shared_ptr<ast::TypeNode>& type, bool is_const=false);
 
@@ -42,7 +48,7 @@ private:
 
     int cur_unique_id_;
 
-    map<string, ast::FuncDeclNode> func_table_;
+    map<string, shared_ptr<ast::FuncDeclNode>> func_table_;
 
     map<string, stack<shared_ptr<Identifier>>> name_to_ident_;
     map<int, shared_ptr<Identifier>> id_to_ident_;

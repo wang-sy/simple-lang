@@ -41,9 +41,25 @@ int VarTable::GetVar(const string &name, VarTable::Identifier *ident) {
 }
 
 bool VarTable::IsVarExistedInCurrentCodeBlock(const string &name) {
-    auto current_code_block_idents = code_block_ident_stack_.top();
+    if (func_table_.find(name) != func_table_.end()) {
+        return true;
+    }
 
-    return !(current_code_block_idents.find(name) == current_code_block_idents.end());
+    if (code_block_ident_stack_.top().find(name) != code_block_ident_stack_.top().end()) {
+        return true;
+    }
+
+    return false;
+}
+
+// AddFunc add a function.
+void VarTable::AddFunc(const string& name, const shared_ptr<ast::FuncDeclNode>& func_decl) {
+    func_table_[name] = func_decl;
+}
+
+// AddFunc add a function.
+void VarTable::GetFunc(const string& name, shared_ptr<ast::FuncDeclNode>* func_decl) {
+    *func_decl = func_table_[name];
 }
 
 VarTable::Identifier::Identifier(int unique_id, const string &name, const shared_ptr<ast::TypeNode> &type,
