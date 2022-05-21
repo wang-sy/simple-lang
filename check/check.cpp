@@ -136,9 +136,14 @@ void Checker::CheckFuncDeclNode(const shared_ptr<ast::FuncDeclNode>& decl) {
             continue;
         }
 
-        auto return_stmt = dynamic_pointer_cast<ast::ReturnStmtNode>(stmt_node);
-        if (return_stmt->Type() != decl->type_->Type()) {
-            errors_->Emplace(return_stmt->Pos(), ec::Type::NotInHomeWork, "for funcdecl return type, expect return type");
+        shared_ptr<ast::TypeNode> return_type;
+        CheckExprAndGetType(dynamic_pointer_cast<ast::ReturnStmtNode>(stmt_node)->results_, &return_type);
+
+        if (return_type->Type() != decl->type_->Type()) {
+            errors_->Emplace(
+                stmt_node->Pos(), 
+                (decl->type_->Type() == ast::VoidType) ? ec::Type::ReturnValueNotAllowed : ec::Type::ReturnValueRequired,
+                "for funcdecl return type, expect return type");
             return;
         }
 
@@ -146,8 +151,11 @@ void Checker::CheckFuncDeclNode(const shared_ptr<ast::FuncDeclNode>& decl) {
     }
 
     if (decl->type_->Type() != ast::VoidType && !have_return) {
-        cout << decl->type_->Type() << endl;
-        errors_->Emplace(decl->Pos(), ec::Type::NotInHomeWork, "for funcdecl return type, expect void or return stmt");
+        errors_->Emplace(
+            decl->Pos(),
+            (decl->type_->Type() == ast::VoidType) ? ec::Type::ReturnValueNotAllowed : ec::Type::ReturnValueRequired,
+            "for funcdecl return type, expect void or return stmt"
+        );
         return;
     }
 
@@ -223,7 +231,7 @@ void Checker::CheckArrayVarDeclNode(const shared_ptr<ast::SingleVarDeclNode> &de
     get_demissions_and_basic_token(composite_lit_type, &composite_lit_demissions, &composite_lit_basic_token);
 
     if (decl_basic_token->Type() != composite_lit_basic_token->Type()) {
-        errors_->Emplace(decl->val_->Pos(), ec::CompositeLitSizeError, "for array var decl, decl basic type and composite lit type neq");
+        errors_->Emplace(decl->val_->Pos(), ec::ExprTypeNotMatched, "for array var decl, decl basic type and composite lit type neq");
         return;
     }
 
@@ -267,7 +275,7 @@ void Checker::CheckBasicVarDeclNode(const shared_ptr<ast::SingleVarDeclNode> &de
     CheckExprAndGetType(decl->val_, &init_lit_type);
 
     if (init_lit_type->Type() != decl->type_->Type()) {
-        errors_->Emplace(decl->val_->Pos(), ec::Type::NotInHomeWork, "for single var decl init value, type not equal");
+        errors_->Emplace(decl->val_->Pos(), ec::Type::ExprTypeNotMatched, "for single var decl init value, type not equal");
         return;
     }
 }
@@ -319,6 +327,8 @@ void Checker::CheckStmt(const shared_ptr<ast::StmtNode>& stmt) {
         case ast::PrintfStmt:
             CheckPrintfStmt(dynamic_pointer_cast<ast::PrintfStmtNode>(stmt));
             return;
+        case ast::EmptyStmt:
+            return;
         default:
             errors_->Emplace(stmt->Pos(), ec::Type::NotInHomeWork, "CheckStmt: stmt type error");
             return;
@@ -331,7 +341,17 @@ void Checker::CheckStmt(const shared_ptr<ast::StmtNode>& stmt) {
  * @param decl_stmt decl stmt node.
  */
 void Checker::CheckDeclStmt(const shared_ptr<ast::DeclStmtNode>& decl_stmt) {
+    if (decl_stmt == nullptr || decl_stmt->Type() != ast::DeclStmt) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckDeclStmt: decl stmt is nullptr");
+        return;
+    }
 
+    if (decl_stmt->decl_ == nullptr || decl_stmt->decl_->Type() != ast::VarDecl) {
+        errors_->Emplace(decl_stmt->Pos(), ec::Type::NotInHomeWork, "CheckDeclStmt: decl stmt decl is nullptr");
+        return;
+    }
+
+    CheckVarDeclNode(dynamic_pointer_cast<ast::VarDeclNode>(decl_stmt->decl_));
 }
 
 /**
@@ -340,7 +360,13 @@ void Checker::CheckDeclStmt(const shared_ptr<ast::DeclStmtNode>& decl_stmt) {
  * @param expr_stmt expr stmt node.
  */
 void Checker::CheckExprStmt(const shared_ptr<ast::ExprStmtNode>& expr_stmt) {
+    if (expr_stmt == nullptr || expr_stmt->Type() != ast::ExprStmt) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckExprStmt: expr stmt is nullptr");
+        return;
+    }
 
+    shared_ptr<ast::TypeNode> typ;
+    CheckExprAndGetType(expr_stmt->expr_, &typ);
 }
 
 /**
@@ -349,7 +375,51 @@ void Checker::CheckExprStmt(const shared_ptr<ast::ExprStmtNode>& expr_stmt) {
  * @param assign_stmt assign stmt node.
  */
 void Checker::CheckAssignStmt(const shared_ptr<ast::AssignStmtNode>& assign_stmt) {
+    if (assign_stmt == nullptr || assign_stmt->Type() != ast::AssignStmt) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckAssignStmt: assign stmt is nullptr");
+        return;
+    }
 
+    if (assign_stmt->lhs_ == nullptr || (assign_stmt->lhs_->Type() != ast::Ident && assign_stmt->lhs_->Type() != ast::IndexExpr)) {
+        errors_->Emplace(
+            assign_stmt->lhs_->Pos(),
+            ec::Type::NotInHomeWork,
+            "CheckAssignStmt: assign stmt lhs expect identifier or index expression"
+        );
+        return;
+    }
+
+    if (assign_stmt->lhs_->Type() == ast::Ident) {
+        auto ident = dynamic_pointer_cast<ast::IdentNode>(assign_stmt->lhs_);
+        VarTable::Identifier ident_info;
+        int ret = var_table_->GetVar(ident->name_, &ident_info);
+        if (ret) {
+            errors_->Emplace(
+                assign_stmt->lhs_->Pos(),
+                ec::Type::Undefine,
+                "for assign stmt, lhs identifier not defined"
+            );
+            return;
+        }
+
+        if (ident_info.is_const) {
+            errors_->Emplace(
+                assign_stmt->lhs_->Pos(),
+                ec::Type::UpdateConstValue,
+                "for assign stmt, const value can not be changed"
+            );
+            return;
+        }
+    }
+
+    shared_ptr<ast::TypeNode> lhs_type, rhs_type;
+    CheckExprAndGetType(assign_stmt->lhs_, &lhs_type);
+    CheckExprAndGetType(assign_stmt->rhs_, &rhs_type);
+
+    if (lhs_type->Type() != rhs_type->Type()) {
+        errors_->Emplace(assign_stmt->rhs_->Pos(), ec::Type::NotInHomeWork, "in assign stmt, type not equal");
+        return;
+    }
 }
 
 /**
@@ -358,7 +428,7 @@ void Checker::CheckAssignStmt(const shared_ptr<ast::AssignStmtNode>& assign_stmt
  * @param return_stmt return stmt node.
  */
 void Checker::CheckReturnStmt(const shared_ptr<ast::ReturnStmtNode>& return_stmt) {
-
+    return;
 }
 
 /**
@@ -367,7 +437,14 @@ void Checker::CheckReturnStmt(const shared_ptr<ast::ReturnStmtNode>& return_stmt
  * @param block_stmt block stmt node.
  */
 void Checker::CheckBlockStmt(const shared_ptr<ast::BlockStmtNode>& block_stmt) {
+    if (block_stmt == nullptr || block_stmt->Type() != ast::BlockStmt) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckBlockStmt: block stmt is nullptr");
+        return;
+    }
 
+    for (auto stmt : block_stmt->stmts_) {
+        CheckStmt(stmt);
+    }
 }
 
 /**
@@ -376,7 +453,29 @@ void Checker::CheckBlockStmt(const shared_ptr<ast::BlockStmtNode>& block_stmt) {
  * @param if_stmt if stmt node.
  */
 void Checker::CheckIfStmt(const shared_ptr<ast::IfStmtNode>& if_stmt) {
+    if (if_stmt == nullptr || if_stmt->Type() != ast::IfStmt) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckIfStmt: if stmt is nullptr");
+        return;
+    }
 
+    // check cond.
+    if (if_stmt->cond_ == nullptr) {
+        errors_->Emplace(if_stmt->Pos(), ec::Type::NotInHomeWork, "CheckIfStmt: if stmt cond is nullptr");
+        return;
+    }
+    CheckCondExpr(if_stmt->cond_);
+
+    // check then stmt.
+    if (if_stmt->body_ == nullptr) {
+        errors_->Emplace(if_stmt->Pos(), ec::Type::NotInHomeWork, "CheckIfStmt: if stmt then stmt is nullptr");
+        return;
+    }
+    CheckStmt(if_stmt->body_);
+
+    // check else stmt.
+    if (if_stmt->else_ != nullptr) {
+        CheckStmt(if_stmt->else_);
+    }
 }
 
 /**
@@ -385,7 +484,78 @@ void Checker::CheckIfStmt(const shared_ptr<ast::IfStmtNode>& if_stmt) {
  * @param switch_stmt switch stmt node.
  */
 void Checker::CheckSwitchStmt(const shared_ptr<ast::SwitchStmtNode>& switch_stmt) {
+    if (switch_stmt == nullptr || switch_stmt->Type() != ast::SwitchStmt) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckSwitchStmt: switch stmt is nullptr");
+        return;
+    }
 
+    // check cond.
+    if (switch_stmt->cond_ == nullptr) {
+        errors_->Emplace(switch_stmt->Pos(), ec::Type::NotInHomeWork, "CheckSwitchStmt: switch stmt cond is nullptr");
+        return;
+    }
+    shared_ptr<ast::TypeNode> switch_cond_type;
+    CheckExprAndGetType(switch_stmt->cond_, &switch_cond_type);
+
+    if (switch_cond_type->Type() != ast::IntType && switch_cond_type->Type() != ast::CharType) {
+        errors_->Emplace(switch_stmt->cond_->Pos(), ec::Type::NotInHomeWork, "CheckSwitchStmt: switch stmt cond type not int or char");
+        return;
+    }
+
+    // check case stmts.
+    bool get_default_case = false;
+    for (const auto& cas: switch_stmt->cases_) {
+        if (cas == nullptr || cas->Type() != ast::CaseStmt) {
+            errors_->Emplace(
+                token::npos,
+                ec::Type::NotInHomeWork,
+                "CheckSwitchStmt: case shouldn't be nullptr"
+            );
+            return;
+        }
+
+        auto case_stmt = dynamic_pointer_cast<ast::CaseStmtNode>(cas);
+
+        // check case cond.
+        if (case_stmt->cond_ == nullptr) {
+            if (get_default_case) {
+                errors_->Emplace(
+                    case_stmt->Pos(),
+                    ec::Type::NotInHomeWork,
+                    "CheckSwitchStmt: switch stmt has more than one default case"
+                );
+                return;
+            }
+
+            get_default_case = true;
+        } else {
+            shared_ptr<ast::TypeNode> case_cond_type;
+            CheckExprAndGetType(case_stmt->cond_, &case_cond_type);
+
+            if (case_cond_type->Type() != switch_cond_type->Type()) {
+                errors_->Emplace(
+                    case_stmt->cond_->Pos(),
+                    ec::Type::ExprTypeNotMatched,
+                    "CheckSwitchStmt: switch stmt case cond type not equal"
+                );
+                return;
+            }
+        }
+
+        // check case body.
+        for (const auto& stmt: case_stmt->body_) {
+            CheckStmt(stmt);
+        }
+    }
+
+    if (!get_default_case) {
+        errors_->Emplace(
+            switch_stmt->Pos(),
+            ec::Type::DefaultExpected,
+            "for switch stmt, expect default case"
+        );
+        return;
+    }
 }
 
 /**
@@ -394,7 +564,36 @@ void Checker::CheckSwitchStmt(const shared_ptr<ast::SwitchStmtNode>& switch_stmt
  * @param for_stmt for stmt node.
  */
 void Checker::CheckForStmt(const shared_ptr<ast::ForStmtNode>& for_stmt) {
+    if (for_stmt == nullptr || for_stmt->Type() != ast::ForStmt) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckForStmt: for stmt is nullptr");
+        return;
+    }
 
+    // check init.
+    if (for_stmt->init_ != nullptr) {
+        CheckStmt(for_stmt->init_);
+    }
+
+    // check cond.
+    if (for_stmt->cond_ != nullptr) {
+        if (for_stmt->cond_->Type() != ast::ExprStmt) {
+            errors_->Emplace(
+                for_stmt->cond_->Pos(),
+                ec::Type::NotInHomeWork,
+                "CheckForStmt: for stmt cond should be expr stmt"
+            );
+            return;
+        }
+
+        CheckCondExpr(dynamic_pointer_cast<ast::ExprStmtNode>(for_stmt->cond_)->expr_);
+    }
+
+    if (for_stmt->step_ != nullptr) {
+        CheckStmt(for_stmt->step_);
+    }
+
+    // check body.
+    CheckStmt(for_stmt->body_);
 }
 
 /**
@@ -403,7 +602,18 @@ void Checker::CheckForStmt(const shared_ptr<ast::ForStmtNode>& for_stmt) {
  * @param while_stmt while stmt node.
  */
 void Checker::CheckWhileStmt(const shared_ptr<ast::WhileStmtNode>& while_stmt) {
+    if (while_stmt == nullptr || while_stmt->Type() != ast::WhileStmt) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckWhileStmt: while stmt is nullptr");
+        return;
+    }
 
+    // check cond.
+    if (while_stmt->cond_ != nullptr) {
+        CheckCondExpr(while_stmt->cond_);
+    }
+
+    // check body.
+    CheckStmt(while_stmt->body_);
 }
 
 /**
@@ -412,7 +622,38 @@ void Checker::CheckWhileStmt(const shared_ptr<ast::WhileStmtNode>& while_stmt) {
  * @param scan_stmt scan stmt node.
  */
 void Checker::CheckScanStmt(const shared_ptr<ast::ScanStmtNode>& scan_stmt) {
+    if (scan_stmt == nullptr || scan_stmt->Type() != ast::ScanStmt) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckScanStmt: scan stmt is nullptr");
+        return;
+    }
 
+    // check var.
+    if (scan_stmt->var_ == nullptr) {
+        errors_->Emplace(scan_stmt->Pos(), ec::Type::NotInHomeWork, "CheckScanStmt: scan stmt var is nullptr");
+        return;
+    }
+
+    if (scan_stmt->var_->Type() != ast::Ident) {
+        errors_->Emplace(
+            scan_stmt->var_->Pos(),
+            ec::Type::UpdateConstValue,
+            "CheckScanStmt: scan stmt var should be ident"
+        );
+        return;
+    }
+
+    auto ident = dynamic_pointer_cast<ast::IdentNode>(scan_stmt->var_);
+    VarTable::Identifier ident_info;
+    var_table_->GetVar(ident->name_, &ident_info);
+
+    if (ident_info.is_const) {
+        errors_->Emplace(
+            scan_stmt->var_->Pos(),
+            ec::Type::UpdateConstValue,
+            "CheckScanStmt: scan stmt var is const"
+        );
+        return;
+    }
 }
 
 /**
@@ -421,12 +662,22 @@ void Checker::CheckScanStmt(const shared_ptr<ast::ScanStmtNode>& scan_stmt) {
  * @param printf_stmt printf stmt node.
  */
 void Checker::CheckPrintfStmt(const shared_ptr<ast::PrintfStmtNode>& printf_stmt) {
+    if (printf_stmt == nullptr || printf_stmt->Type() != ast::PrintfStmt) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckPrintfStmt: printf stmt is nullptr");
+        return;
+    }
 
+    for (const auto& arg: printf_stmt->args_) {
+        shared_ptr<ast::TypeNode> arg_type;
+        CheckExprAndGetType(arg, &arg_type);
+    }
+
+    return;
 }
 
 void Checker::CheckExprAndGetType(const shared_ptr<ast::ExprNode> &expr, shared_ptr<ast::TypeNode> *typ) {
     if (expr == nullptr) {
-        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckExprAndGetType: expr is nullptr");
+        *typ = make_shared<ast::VoidTypeNode>();
         return;
     }
 
@@ -492,9 +743,33 @@ void Checker::CheckBasicLitNodeAndGetType(const shared_ptr<ast::BasicLitNode> &e
     }
 
     // FIXME: Required by homework, charlit and stringlit can't be empty.
-    if ((expr->tok_ == token::Token::CHARCON || expr->tok_ == token::Token::STRCON) && expr->val_.empty()) {
+    if ((expr->tok_ == token::Token::CHARCON || expr->tok_ == token::Token::STRCON) && expr->val_.size() == 2) {
         errors_->Emplace(expr->Pos(), ec::EmptyCharOrStringLit, "for <char/string> basic lit, expect not empty");
         return;
+    }
+
+    if (expr->tok_ == token::Token::CHARCON) {
+        for (size_t i = 1; i <expr->val_.size() - 1; i ++) {
+            char c = expr->val_.at(i);
+            if (c >= 'a' && c <= 'z') continue;
+            if (c >= 'A' && c <= 'Z') continue;
+            if (c >= '0' && c <= '9') continue;
+            if (c == '+' || c == '-' || c == '*' || c == '/') continue;
+
+            errors_->Emplace(expr->Pos(), ec::EmptyCharOrStringLit, "for <char> basic lit, expect add/sub/mul/div/word/num");
+            break;
+        }
+    }
+
+    if (expr->tok_ == token::Token::STRCON) {
+        for (size_t i = 1; i <expr->val_.size() - 1; i ++) {
+            char c = expr->val_.at(i);
+            if (c >= 35 && c <= 126) continue;
+            if (c ==32 || c == 33) continue;
+
+            errors_->Emplace(expr->Pos(), ec::EmptyCharOrStringLit, "for <string> basic lit, expect ascii 32/33/35-126");
+            break;
+        }
     }
 
     if (expr->tok_ == token::Token::INTCON) {
@@ -623,7 +898,76 @@ PostCheckProcess:
 }
 
 void Checker::CheckIndexExprNodeAndGetType(const shared_ptr<ast::IndexExprNode> &expr, shared_ptr<ast::TypeNode> *typ) {
-    
+    *typ = make_shared<ast::VoidTypeNode>();
+    if (expr == nullptr || expr->Type() != ast::IndexExpr) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckIndexExprNodeAndGetType: expr is nullptr");
+        return;
+    }
+
+    shared_ptr<ast::ExprNode> cur_node = expr;
+    while (cur_node != nullptr && cur_node->Type() == ast::IndexExpr) {
+        auto index_expr_node = dynamic_pointer_cast<ast::IndexExprNode>(cur_node);
+
+        shared_ptr<ast::TypeNode> cur_index_type;
+        CheckExprAndGetType(index_expr_node->index_, &cur_index_type);
+
+        if (cur_index_type->Type() != ast::IntType) {
+            errors_->Emplace(
+                index_expr_node->index_->Pos(),
+                ec::Type::IndexTypeNotAllowed,
+                "for index expression, index type error"
+            );
+            return;
+        }
+
+        cur_node = index_expr_node->x_;
+    }
+
+    if (cur_node == nullptr || cur_node->Type() != ast::Ident) {
+        errors_->Emplace(
+            expr->Pos(),
+            ec::Type::IndexTypeNotAllowed,
+            "for index expression, index type error"
+        );
+        return;
+    }
+
+    auto ident_node = dynamic_pointer_cast<ast::IdentNode>(cur_node);
+    VarTable::Identifier ident_info;
+    if (var_table_->GetVar(ident_node->name_, &ident_info)) {
+        errors_->Emplace(
+            ident_node->Pos(),
+            ec::Type::Undefine,
+            "for index expression, ident not found"
+        );
+        return;
+    }
+
+    if (ident_info.type->Type() != ast::ArrayType) {
+        errors_->Emplace(
+            ident_node->Pos(),
+            ec::Type::Undefine,
+            "for index expression, ident type error"
+        );
+        return;
+    }
+
+    auto array_type_node = dynamic_pointer_cast<ast::ArrayTypeNode>(ident_info.type);
+    shared_ptr<ast::TypeNode> decl_type_node = array_type_node;
+    while(decl_type_node != nullptr && decl_type_node->Type() == ast::ArrayType) {
+        decl_type_node = dynamic_pointer_cast<ast::ArrayTypeNode>(decl_type_node)->item_;
+    }
+
+    if (decl_type_node == nullptr) {
+        errors_->Emplace(
+            ident_node->Pos(),
+            ec::Type::Undefine,
+            "for index expression, ident type error"
+        );
+        return;
+    }
+    *typ = decl_type_node;
+    return;
 }
 
 void Checker::CheckCallExprNodeAndGetType(const shared_ptr<ast::CallExprNode> &expr, shared_ptr<ast::TypeNode> *typ) {
@@ -786,7 +1130,7 @@ void Checker::CheckCondExpr(const shared_ptr<ast::ExprNode>& cond_expr) {
     CheckExprAndGetType(binary_expr->y_, &rhs_type);
     
     if (lhs_type->Type() != rhs_type->Type()) {
-        errors_->Emplace(binary_expr->Pos(), ec::Type::NotInHomeWork, "CheckCondExpr: lhs and rhs type not matched");
+        errors_->Emplace(binary_expr->Pos(), ec::Type::CondValueNotMatched, "CheckCondExpr: lhs and rhs type not matched");
         return;
     }
 }

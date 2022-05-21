@@ -79,10 +79,11 @@ void Parser::Error(const token::Position& pos, ec::Type error_type, const string
 void Parser::Expect(token::Token tok) {
     if (tok_ != tok) {
         string msg = "expect " + token::GetTokenName(tok) + ", but get " + token::GetTokenName(tok_);
+        cout << "Expect: " << token::GetTokenName(tok) << endl;
         ec::Type error_type = (
-            tok == token::Token::SEMICN ? ec::Type::SEMICNExpected :
-            tok == token::Token::RBRACK ? ec::Type::RBRACKExpected :
-            tok == token::Token::RPARENT ? ec::Type::RPARENTExpected :
+            (tok == token::Token::SEMICN) ? ec::Type::SEMICNExpected :
+            (tok == token::Token::RBRACK) ? ec::Type::RBRACKExpected :
+            (tok == token::Token::RPARENT) ? ec::Type::RPARENTExpected :
             ec::Type::NotInHomeWork
         );
         Error(pos_, error_type, msg);
@@ -184,8 +185,8 @@ shared_ptr<ast::FieldListNode> Parser::ParseFieldList() {
 
         fields->fields_.push_back(make_shared<ast::FieldNode>(param_type->Pos(), param_type, param_name));
 
-        // for ')', break.
-        if (tok_ == token::Token::RPARENT) {
+        // for not comma, break.
+        if (tok_ != token::Token::COMMA) {
             break;
         }
         Expect(token::Token::COMMA);
@@ -649,7 +650,7 @@ shared_ptr<ast::StmtNode> Parser::ParseForStmt() {
     }
 
     if (tok_ != token::Token::SEMICN) {
-        ret_for_stmt_node->init_ = ParseSimpleStmt();
+        ret_for_stmt_node->cond_ = ParseSimpleStmt();
         Expect(token::Token::SEMICN);
     }
 
@@ -833,8 +834,6 @@ shared_ptr<ast::ExprNode> Parser::ParseIndexExpr(const shared_ptr<ast::ExprNode>
 
     return current_node;
 }
-
-
 
 // Report all parse errors.
 void Parser::ReportErrors() {

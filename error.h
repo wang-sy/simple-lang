@@ -38,7 +38,7 @@ enum Type {
     // composite literal size error, e.g. int a[2][3] = {{1,2,3}, {1,2}}.
     CompositeLitSizeError,
     // switch expression type and case type not matched.
-    SwitchTypeError,
+    ExprTypeNotMatched,
     // default case should be the last one.
     DefaultExpected,
     NotInHomeWork,
@@ -54,12 +54,11 @@ public:
     const token::Position& pos() const { return pos_; }
     const string& msg() const { return msg_; }
     const string ToString() const {
-        // string res = to_string(pos_.line) + " ";
-        // res.push_back('a' + type_);
-        // return res;
-        string res = "["; res.push_back('a' + type_); res += "]";
-        res += " => " + pos_.ToString();
-        res += " :: " + msg_;
+        string res = to_string(pos_.line) + " ";
+        res.push_back('a' + type_);
+        // string res = "["; res.push_back('a' + type_); res += "]";
+        // res += " => " + pos_.ToString();
+         res += " :: " + msg_;
         return res;
     }
 public:
