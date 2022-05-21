@@ -58,8 +58,14 @@ void VarTable::AddFunc(const string& name, const shared_ptr<ast::FuncDeclNode>& 
 }
 
 // AddFunc add a function.
-void VarTable::GetFunc(const string& name, shared_ptr<ast::FuncDeclNode>* func_decl) {
-    *func_decl = func_table_[name];
+int VarTable::GetFunc(const string& name, shared_ptr<ast::FuncDeclNode>* func_decl) {
+    auto get_func_iter = func_table_.find(name);
+    if (get_func_iter == func_table_.end()) {
+        return -1;
+    }
+
+    *func_decl = get_func_iter->second;
+    return 0;
 }
 
 VarTable::Identifier::Identifier(int unique_id, const string &name, const shared_ptr<ast::TypeNode> &type,

@@ -272,204 +272,6 @@ void Checker::CheckBasicVarDeclNode(const shared_ptr<ast::SingleVarDeclNode> &de
     }
 }
 
-void Checker::CheckExprAndGetType(const shared_ptr<ast::ExprNode> &expr, shared_ptr<ast::TypeNode> *typ) {
-    if (expr == nullptr) {
-        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckExprAndGetType: expr is nullptr");
-        return;
-    }
-
-    switch (expr->Type()) {
-        case ast::Ident:
-            CheckIdentExprNodeAndGetType(dynamic_pointer_cast<ast::IdentNode>(expr), typ);
-            return;
-        case ast::BasicLit:
-            CheckBasicLitNodeAndGetType(dynamic_pointer_cast<ast::BasicLitNode>(expr), typ);
-            return;
-        case ast::CompositeLit:
-            CheckCompositeLitNodeAndGetType(dynamic_pointer_cast<ast::CompositeLitNode>(expr), typ);
-            return;
-        case ast::IndexExpr:
-            CheckIndexExprNodeAndGetType(dynamic_pointer_cast<ast::IndexExprNode>(expr), typ);
-            return;
-        case ast::CallExpr:
-            CheckCallExprNodeAndGetType(dynamic_pointer_cast<ast::CallExprNode>(expr), typ);
-            return;
-        case ast::UnaryExpr:
-            CheckUnaryExprNodeAndGetType(dynamic_pointer_cast<ast::UnaryExprNode>(expr), typ);
-            return;
-        case ast::BinaryExpr:
-            CheckBinaryExprNodeAndGetType(dynamic_pointer_cast<ast::BinaryExprNode>(expr), typ);
-            return;
-        default:
-            errors_->Emplace(expr->Pos(), ec::NotInHomeWork, "unknown expr type");
-            return;
-    }
-}
-
-
-void Checker::CheckIdentExprNodeAndGetType(const shared_ptr<ast::IdentNode> &expr, shared_ptr<ast::TypeNode> *typ) {
-    if (expr == nullptr) {
-        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckIdentExprNodeAndGetType: expr is nullptr");
-        return;
-    }
-
-    // check if ident existed.
-    VarTable::Identifier ident;
-    int ret = var_table_->GetVar(expr->name_, &ident);
-    if (ret) {
-        *typ = make_shared<ast::BadTypeNode>(expr->Pos());
-        errors_->Emplace(expr->Pos(), ec::Undefine, "for ident expr, var not found");
-        return;
-    }
-
-    *typ = ident.type;
-}
-
-void Checker::CheckBasicLitNodeAndGetType(const shared_ptr<ast::BasicLitNode> &expr, shared_ptr<ast::TypeNode> *typ) {
-    *typ = make_shared<ast::BadTypeNode>(expr->Pos());
-    if (expr == nullptr) {
-        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckBasicLitNodeAndGetType: expr is nullptr");
-        return;
-    }
-
-    // check basic literal type.
-    if (expr->tok_ != token::Token::INTCON && expr->tok_ != token::Token::CHARCON && expr->tok_ != token::Token::STRCON) {
-        errors_->Emplace(expr->Pos(), ec::NotInHomeWork, "for basic literal, expect int, char or string type");
-        return;
-    }
-
-    // FIXME: Required by homework, charlit and stringlit can't be empty.
-    if ((expr->tok_ == token::Token::CHARCON || expr->tok_ == token::Token::STRCON) && expr->val_.empty()) {
-        errors_->Emplace(expr->Pos(), ec::EmptyCharOrStringLit, "for <char/string> basic lit, expect not empty");
-        return;
-    }
-
-    if (expr->tok_ == token::Token::INTCON) {
-        *typ = make_shared<ast::IntTypeNode>(expr->Pos());
-    } else if (expr->tok_ == token::Token::CHARCON) {
-        *typ = make_shared<ast::CharTypeNode>(expr->Pos());
-    } else if (expr->tok_ == token::Token::STRCON) {
-        *typ = make_shared<ast::StringTypeNode>(expr->Pos());
-    }
-}
-
-void Checker::CheckCompositeLitNodeAndGetType(const shared_ptr<ast::CompositeLitNode> &expr,
-                                              shared_ptr<ast::TypeNode> *typ) {
-    *typ = make_shared<ast::BadTypeNode>(expr->Pos());
-    if (expr == nullptr) {
-        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckCompositeLitNodeAndGetType: expr is nullptr");
-        return;
-    }
-
-    vector<shared_ptr<ast::ExprNode>> cur_demission_nodes, next_demission_nodes;
-    cur_demission_nodes.push_back(expr);
-
-    vector<int> demissions;
-    pair<bool, token::Token> get_basic_type_token;
-    while(!cur_demission_nodes.empty()) {
-        auto cur_demission_first_node = cur_demission_nodes.front();
-        shared_ptr<ast::CompositeLitNode> cur_demission_ref_composite_lit_node;
-        shared_ptr<ast::BasicLitNode> cur_demission_ref_basic_lit_node;
-
-        if (cur_demission_first_node->Type() == ast::CompositeLit) {
-            goto CompositeLitDemissionCheck;
-        } else if (cur_demission_first_node->Type() == ast::BasicLit)  {
-            goto BasicLitDemissionCheck;
-        } else {
-            errors_->Emplace(
-                cur_demission_first_node->Pos(),
-                ec::Type::CompositeLitSizeError,
-                "for composite literal item, type undefined"
-            );
-            return;
-        }
-
-// nodes in current demission are all array type.
-CompositeLitDemissionCheck:
-        cur_demission_ref_composite_lit_node = dynamic_pointer_cast<ast::CompositeLitNode>(cur_demission_first_node);
-        demissions.push_back(cur_demission_ref_composite_lit_node->items_.size());
-
-        for (const auto& node: cur_demission_nodes) {
-            if (node->Type() != ast::CompositeLit) {
-                errors_->Emplace(
-                    node->Pos(),
-                    ec::Type::CompositeLitSizeError,
-                    "for composite literal item, type error"
-                );
-                return;
-            }
-
-            auto composite_lit_node = dynamic_pointer_cast<ast::CompositeLitNode>(node);
-            if (composite_lit_node->items_.size() != cur_demission_ref_composite_lit_node->items_.size()) {
-                errors_->Emplace(
-                    node->Pos(),
-                    ec::Type::CompositeLitSizeError,
-                    "for composite literal item, size not equal"
-                );
-                return;
-            }
-
-            // correct size and type, add items.
-            for (const auto& item: composite_lit_node->items_) {
-                next_demission_nodes.push_back(item);
-            }
-        }
-
-        goto PostCheckProcess;
-
-// nodes in current demission have same tok_.
-BasicLitDemissionCheck:
-        cur_demission_ref_basic_lit_node = dynamic_pointer_cast<ast::BasicLitNode>(cur_demission_first_node);
-        for(const auto& node: cur_demission_nodes) {
-            if (node->Type() != ast::BasicLit) {
-                errors_->Emplace(
-                    node->Pos(),
-                    ec::Type::CompositeLitSizeError,
-                    "for composite literal item, type error"
-                );
-                return;
-            }
-
-            auto basic_lit_node = dynamic_pointer_cast<ast::BasicLitNode>(node);
-            if (basic_lit_node->tok_ != cur_demission_ref_basic_lit_node->tok_) {
-                errors_->Emplace(
-                    node->Pos(),
-                    ec::Type::CompositeLitSizeError,
-                    "for composite literal item, token's type error"
-                );
-                return;
-            }
-        }
-        get_basic_type_token = make_pair(true, cur_demission_ref_basic_lit_node->tok_);
-
-        goto PostCheckProcess;
-
-PostCheckProcess:
-        cur_demission_nodes = next_demission_nodes;
-        next_demission_nodes.clear();
-    }
-
-    if (!get_basic_type_token.first) {
-        errors_->Emplace(
-            expr->Pos(),
-            ec::Type::NotInHomeWork,
-            "for composite literal, basic lit type not found"
-        );
-        return;
-    }
-
-    // write back type.
-    if (get_basic_type_token.second == token::INTCON) *typ = make_shared<ast::IntTypeNode>(expr->Pos());
-    else if (get_basic_type_token.second == token::CHARCON) *typ = make_shared<ast::CharTypeNode>(expr->Pos());
-    else if (get_basic_type_token.second == token::STRCON) *typ = make_shared<ast::StringTypeNode>(expr->Pos());
-    else *typ = make_shared<ast::BadTypeNode>(expr->Pos());
-
-    for (int i = demissions.size() - 1; i >= 0; i--) {
-        *typ= make_shared<ast::ArrayTypeNode>(expr->Pos(), demissions.at(i), *typ);
-    }
-}
-
-
 /**
  * @brief CheckStmt check stmt node.
  * 
@@ -622,16 +424,285 @@ void Checker::CheckPrintfStmt(const shared_ptr<ast::PrintfStmtNode>& printf_stmt
 
 }
 
-void Checker::CheckIndexExprNodeAndGetType(const shared_ptr<ast::IndexExprNode> &expr, shared_ptr<ast::TypeNode> *typ) {
+void Checker::CheckExprAndGetType(const shared_ptr<ast::ExprNode> &expr, shared_ptr<ast::TypeNode> *typ) {
+    if (expr == nullptr) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckExprAndGetType: expr is nullptr");
+        return;
+    }
 
+    switch (expr->Type()) {
+        case ast::Ident:
+            CheckIdentExprNodeAndGetType(dynamic_pointer_cast<ast::IdentNode>(expr), typ);
+            return;
+        case ast::BasicLit:
+            CheckBasicLitNodeAndGetType(dynamic_pointer_cast<ast::BasicLitNode>(expr), typ);
+            return;
+        case ast::CompositeLit:
+            CheckCompositeLitNodeAndGetType(dynamic_pointer_cast<ast::CompositeLitNode>(expr), typ);
+            return;
+        case ast::IndexExpr:
+            CheckIndexExprNodeAndGetType(dynamic_pointer_cast<ast::IndexExprNode>(expr), typ);
+            return;
+        case ast::CallExpr:
+            CheckCallExprNodeAndGetType(dynamic_pointer_cast<ast::CallExprNode>(expr), typ);
+            return;
+        case ast::UnaryExpr:
+            CheckUnaryExprNodeAndGetType(dynamic_pointer_cast<ast::UnaryExprNode>(expr), typ);
+            return;
+        case ast::BinaryExpr:
+            CheckBinaryExprNodeAndGetType(dynamic_pointer_cast<ast::BinaryExprNode>(expr), typ);
+            return;
+        case ast::ParenExpr:
+            CheckExprAndGetType(dynamic_pointer_cast<ast::ParenExprNode>(expr)->expr_, typ);
+            return;
+        default:
+            errors_->Emplace(expr->Pos(), ec::NotInHomeWork, "unknown expr type");
+            return;
+    }
+}
+
+void Checker::CheckIdentExprNodeAndGetType(const shared_ptr<ast::IdentNode> &expr, shared_ptr<ast::TypeNode> *typ) {
+    if (expr == nullptr) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckIdentExprNodeAndGetType: expr is nullptr");
+        return;
+    }
+
+    // check if ident existed.
+    VarTable::Identifier ident;
+    if (var_table_->GetVar(expr->name_, &ident)) {
+        *typ = make_shared<ast::BadTypeNode>(expr->Pos());
+        errors_->Emplace(expr->Pos(), ec::Undefine, "for ident expr, var not found");
+        return;
+    }
+
+    *typ = ident.type;
+}
+
+void Checker::CheckBasicLitNodeAndGetType(const shared_ptr<ast::BasicLitNode> &expr, shared_ptr<ast::TypeNode> *typ) {
+    *typ = make_shared<ast::BadTypeNode>(expr->Pos());
+    if (expr == nullptr) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckBasicLitNodeAndGetType: expr is nullptr");
+        return;
+    }
+
+    // check basic literal type.
+    if (expr->tok_ != token::Token::INTCON && expr->tok_ != token::Token::CHARCON && expr->tok_ != token::Token::STRCON) {
+        errors_->Emplace(expr->Pos(), ec::NotInHomeWork, "for basic literal, expect int, char or string type");
+        return;
+    }
+
+    // FIXME: Required by homework, charlit and stringlit can't be empty.
+    if ((expr->tok_ == token::Token::CHARCON || expr->tok_ == token::Token::STRCON) && expr->val_.empty()) {
+        errors_->Emplace(expr->Pos(), ec::EmptyCharOrStringLit, "for <char/string> basic lit, expect not empty");
+        return;
+    }
+
+    if (expr->tok_ == token::Token::INTCON) {
+        *typ = make_shared<ast::IntTypeNode>(expr->Pos());
+    } else if (expr->tok_ == token::Token::CHARCON) {
+        *typ = make_shared<ast::CharTypeNode>(expr->Pos());
+    } else if (expr->tok_ == token::Token::STRCON) {
+        *typ = make_shared<ast::StringTypeNode>(expr->Pos());
+    }
+}
+
+void Checker::CheckCompositeLitNodeAndGetType(const shared_ptr<ast::CompositeLitNode> &expr,
+                                              shared_ptr<ast::TypeNode> *typ) {
+    *typ = make_shared<ast::BadTypeNode>(expr->Pos());
+    if (expr == nullptr) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckCompositeLitNodeAndGetType: expr is nullptr");
+        return;
+    }
+
+    vector<shared_ptr<ast::ExprNode>> cur_demission_nodes, next_demission_nodes;
+    cur_demission_nodes.push_back(expr);
+
+    vector<int> demissions;
+    pair<bool, token::Token> get_basic_type_token;
+    while(!cur_demission_nodes.empty()) {
+        auto cur_demission_first_node = cur_demission_nodes.front();
+        shared_ptr<ast::CompositeLitNode> cur_demission_ref_composite_lit_node;
+        shared_ptr<ast::BasicLitNode> cur_demission_ref_basic_lit_node;
+
+        if (cur_demission_first_node->Type() == ast::CompositeLit) {
+            goto CompositeLitDemissionCheck;
+        } else if (cur_demission_first_node->Type() == ast::BasicLit)  {
+            goto BasicLitDemissionCheck;
+        } else {
+            errors_->Emplace(
+                cur_demission_first_node->Pos(),
+                ec::Type::CompositeLitSizeError,
+                "for composite literal item, type undefined"
+            );
+            return;
+        }
+
+// nodes in current demission are all array type.
+CompositeLitDemissionCheck:
+        cur_demission_ref_composite_lit_node = dynamic_pointer_cast<ast::CompositeLitNode>(cur_demission_first_node);
+        demissions.push_back(cur_demission_ref_composite_lit_node->items_.size());
+
+        for (const auto& node: cur_demission_nodes) {
+            if (node->Type() != ast::CompositeLit) {
+                errors_->Emplace(
+                    node->Pos(),
+                    ec::Type::CompositeLitSizeError,
+                    "for composite literal item, type error"
+                );
+                return;
+            }
+
+            auto composite_lit_node = dynamic_pointer_cast<ast::CompositeLitNode>(node);
+            if (composite_lit_node->items_.size() != cur_demission_ref_composite_lit_node->items_.size()) {
+                errors_->Emplace(
+                    node->Pos(),
+                    ec::Type::CompositeLitSizeError,
+                    "for composite literal item, size not equal"
+                );
+                return;
+            }
+
+            // correct size and type, add items.
+            for (const auto& item: composite_lit_node->items_) {
+                next_demission_nodes.push_back(item);
+            }
+        }
+
+        goto PostCheckProcess;
+
+// nodes in current demission have same tok_.
+BasicLitDemissionCheck:
+        cur_demission_ref_basic_lit_node = dynamic_pointer_cast<ast::BasicLitNode>(cur_demission_first_node);
+        for(const auto& node: cur_demission_nodes) {
+            if (node->Type() != ast::BasicLit) {
+                errors_->Emplace(
+                    node->Pos(),
+                    ec::Type::CompositeLitSizeError,
+                    "for composite literal item, type error"
+                );
+                return;
+            }
+
+            auto basic_lit_node = dynamic_pointer_cast<ast::BasicLitNode>(node);
+            if (basic_lit_node->tok_ != cur_demission_ref_basic_lit_node->tok_) {
+                errors_->Emplace(
+                    node->Pos(),
+                    ec::Type::CompositeLitSizeError,
+                    "for composite literal item, token's type error"
+                );
+                return;
+            }
+        }
+        get_basic_type_token = make_pair(true, cur_demission_ref_basic_lit_node->tok_);
+
+        goto PostCheckProcess;
+
+PostCheckProcess:
+        cur_demission_nodes = next_demission_nodes;
+        next_demission_nodes.clear();
+    }
+
+    if (!get_basic_type_token.first) {
+        errors_->Emplace(
+            expr->Pos(),
+            ec::Type::NotInHomeWork,
+            "for composite literal, basic lit type not found"
+        );
+        return;
+    }
+
+    // write back type.
+    if (get_basic_type_token.second == token::INTCON) *typ = make_shared<ast::IntTypeNode>(expr->Pos());
+    else if (get_basic_type_token.second == token::CHARCON) *typ = make_shared<ast::CharTypeNode>(expr->Pos());
+    else if (get_basic_type_token.second == token::STRCON) *typ = make_shared<ast::StringTypeNode>(expr->Pos());
+    else *typ = make_shared<ast::BadTypeNode>(expr->Pos());
+
+    for (int i = demissions.size() - 1; i >= 0; i--) {
+        *typ= make_shared<ast::ArrayTypeNode>(expr->Pos(), demissions.at(i), *typ);
+    }
+}
+
+void Checker::CheckIndexExprNodeAndGetType(const shared_ptr<ast::IndexExprNode> &expr, shared_ptr<ast::TypeNode> *typ) {
+    
 }
 
 void Checker::CheckCallExprNodeAndGetType(const shared_ptr<ast::CallExprNode> &expr, shared_ptr<ast::TypeNode> *typ) {
+    *typ = make_shared<ast::BadTypeNode>(expr->Pos());
+    if (expr == nullptr || expr->Type() != ast::CallExpr) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckCallExprNodeAndGetType: expr is nullptr");
+        return;
+    }
+    
+    // check func exist and get type.
+    auto func_name = expr->fun_;
+    if (func_name == nullptr || func_name->Type() != ast::NodeType::Ident) {
+        errors_->Emplace(expr->Pos(), ec::Type::NotInHomeWork, "CheckCallExprNodeAndGetType: func_name is nullptr");
+        return;
+    }
+    auto func_name_ident = dynamic_pointer_cast<ast::IdentNode>(func_name);
 
+    shared_ptr<ast::FuncDeclNode> func_decl;
+    if (var_table_->GetFunc(func_name_ident->name_, &func_decl) != 0) {
+        errors_->Emplace(expr->Pos(), ec::Type::NotInHomeWork, "CheckCallExprNodeAndGetType: func decl not found");
+        return;
+    }
+
+    // set type.
+    *typ = func_decl->type_ == nullptr ? make_shared<ast::BadTypeNode>() : func_decl->type_;
+
+    // check func params.
+    auto decl_params = func_decl->params_->fields_;
+    auto pass_params = expr->args_;
+    if (decl_params.size() != pass_params.size()) {
+        errors_->Emplace(
+            expr->Pos(),
+            ec::Type::ArgNumberNotMatched,
+            "for call expr, arg number not matched"
+        );
+        return;
+    }
+
+    // check each param.
+    for (int i = 0; i < decl_params.size(); i++) {
+        auto decl_param = decl_params.at(i);
+        auto pass_param = pass_params.at(i);
+        shared_ptr<ast::TypeNode> pass_param_type;
+        CheckExprAndGetType(pass_param, &pass_param_type);
+
+        if (decl_param->type_->Type() != pass_param_type->Type()) {
+            errors_->Emplace(
+                pass_param->Pos(),
+                ec::Type::ArgTypeNotMatched,
+                "for call expr, arg type not matched"
+            );
+            return;
+        }
+    }
 }
 
 void Checker::CheckUnaryExprNodeAndGetType(const shared_ptr<ast::UnaryExprNode> &expr, shared_ptr<ast::TypeNode> *typ) {
+    *typ = make_shared<ast::BadTypeNode>(expr->Pos());
+    if (expr == nullptr || expr->Type() != ast::UnaryExpr) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckUnaryExprNodeAndGetType: expr is nullptr");
+        return;
+    }
 
+    // check op.
+    if (expr->op_tok_ != token::PLUS && expr->op_tok_ != token::MINU) {
+        errors_->Emplace(expr->Pos(), ec::Type::NotInHomeWork, "CheckUnaryExprNodeAndGetType: op error");
+        return;
+    }
+
+    // check expr.
+    shared_ptr<ast::TypeNode> expr_type;
+    CheckExprAndGetType(expr->x_, &expr_type);
+
+    if (expr_type->Type() != ast::IntType) {
+        errors_->Emplace(expr->x_->Pos(), ec::Type::NotInHomeWork, "unary expr x_, can only be int type");
+        return;
+    }
+
+    *typ = make_shared<ast::IntTypeNode>(expr->Pos());
 }
 
 /**
@@ -641,8 +712,82 @@ void Checker::CheckUnaryExprNodeAndGetType(const shared_ptr<ast::UnaryExprNode> 
  */
 void Checker::CheckBinaryExprNodeAndGetType(const shared_ptr<ast::BinaryExprNode> &expr,
                                             shared_ptr<ast::TypeNode> *typ) {
+    *typ = make_shared<ast::BadTypeNode>(expr->Pos());
+    if (expr == nullptr || expr->Type() != ast::BinaryExpr) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckBinaryExprNodeAndGetType: expr is nullptr");
+        return;
+    }
 
+    // check op.
+    vector<token::Token> not_expect_op_tokens{
+        token::Token::LSS, token::Token::LEQ, token::Token::GRE,
+        token::Token::GEQ, token::Token::EQL, token::Token::NEQ,
+    };
+    for (const auto& not_expect_op_token: not_expect_op_tokens) {
+        if (expr->op_tok_ == not_expect_op_token) {
+            errors_->Emplace(expr->Pos(), ec::Type::NotInHomeWork, "CheckBinaryExprNodeAndGetType: op error");
+            return;
+        }
+    }
+
+    // check expr.
+    shared_ptr<ast::TypeNode> lhs_type, rhs_type;
+    CheckExprAndGetType(expr->x_, &lhs_type);
+    CheckExprAndGetType(expr->y_, &rhs_type);
+
+    if (lhs_type->Type() != rhs_type->Type()) {
+        errors_->Emplace(expr->Pos(), ec::Type::NotInHomeWork, "binary expr, lhs and rhs type not matched");
+        return;
+    }
+
+    *typ = lhs_type;
 }
 
 
+/**
+ * @brief CheckCondExpr check cond expr node.
+ * 
+ * @param cond_expr cond expr node.
+ */
+void Checker::CheckCondExpr(const shared_ptr<ast::ExprNode>& cond_expr) {
+    if (cond_expr == nullptr || (cond_expr->Type() != ast::BinaryExpr && cond_expr->Type() != ast::ParenExpr)) {
+        errors_->Emplace(token::npos, ec::Type::NotInHomeWork, "CheckCondExpr: cond_expr should be a binary expr or paren expr");
+        return;
+    }
+
+    if (cond_expr->Type() == ast::ParenExpr) {
+        CheckCondExpr(dynamic_pointer_cast<ast::ParenExprNode>(cond_expr)->expr_);
+        return;
+    }
+
+    // check op.
+    auto binary_expr = dynamic_pointer_cast<ast::BinaryExprNode>(cond_expr);
+    bool get_expect_op_token = false;
+
+    vector<token::Token> expect_op_tokens{
+        token::Token::LSS, token::Token::LEQ, token::Token::GRE,
+        token::Token::GEQ, token::Token::EQL, token::Token::NEQ,
+    };
+    for (const auto& expect_op_token: expect_op_tokens) {
+        if (binary_expr->op_tok_ == expect_op_token) {
+            get_expect_op_token = true;
+            break;
+        }
+    }
+
+    if (!get_expect_op_token) {
+        errors_->Emplace(binary_expr->Pos(), ec::Type::NotInHomeWork, "CheckCondExpr: op error");
+        return;
+    }
+
+    // check expr.
+    shared_ptr<ast::TypeNode> lhs_type, rhs_type;
+    CheckExprAndGetType(binary_expr->x_, &lhs_type);
+    CheckExprAndGetType(binary_expr->y_, &rhs_type);
+    
+    if (lhs_type->Type() != rhs_type->Type()) {
+        errors_->Emplace(binary_expr->Pos(), ec::Type::NotInHomeWork, "CheckCondExpr: lhs and rhs type not matched");
+        return;
+    }
+}
 }

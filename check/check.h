@@ -61,6 +61,13 @@ private:
     void CheckExprAndGetType(const shared_ptr<ast::ExprNode>& expr, shared_ptr<ast::TypeNode>* typ);
 
     /**
+     * @brief CheckCondExpr check cond expr node.
+     * 
+     * @param cond_expr cond expr node.
+     */
+    void CheckCondExpr(const shared_ptr<ast::ExprNode>& cond_expr);
+
+    /**
      * @brief CheckIdentNodeAndGetType check ident expr node and get its type.
      *
      * @param ident ident expr node.

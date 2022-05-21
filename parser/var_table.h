@@ -34,7 +34,7 @@ public:
     void AddFunc(const string& name, const shared_ptr<ast::FuncDeclNode>& func_decl);
 
     // GetFunc get a function node.
-    void GetFunc(const string& name, shared_ptr<ast::FuncDeclNode>* func_decl);
+    int GetFunc(const string& name, shared_ptr<ast::FuncDeclNode>* func_decl);
 
     // AddVar add a variable to current code block.
     void AddVar(const string& name, const shared_ptr<ast::TypeNode>& type, bool is_const=false);
