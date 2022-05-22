@@ -1,9 +1,11 @@
-gen_submit: clean
+gen_submit:
+
 	mkdir submit
 	mkdir -p ./submit/ast
 	mkdir -p ./submit/parser
 	mkdir -p ./submit/scanner
 	mkdir -p ./submit/token
+	mkdir -p ./submit/check
 
 	cp ./*.cpp ./submit/
 	cp ./*.h ./submit/
@@ -23,6 +25,9 @@ gen_submit: clean
 	cp ./check/*.h ./submit/check/
 
 	cp ./Makefile ./submit/
+
+	zip -q -r submit.zip ./submit
+	rm -rf ./submit
 
 clean:
 	rm -rf ./submit ./testfile.txt ./output.txt ./simple-lang
