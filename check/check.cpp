@@ -415,11 +415,6 @@ void Checker::CheckAssignStmt(const shared_ptr<ast::AssignStmtNode>& assign_stmt
     shared_ptr<ast::TypeNode> lhs_type, rhs_type;
     CheckExprAndGetType(assign_stmt->lhs_, &lhs_type);
     CheckExprAndGetType(assign_stmt->rhs_, &rhs_type);
-
-    if (lhs_type->Type() != rhs_type->Type()) {
-        errors_->Emplace(assign_stmt->rhs_->Pos(), ec::Type::NotInHomeWork, "in assign stmt, type not equal");
-        return;
-    }
 }
 
 /**
@@ -1079,11 +1074,6 @@ void Checker::CheckBinaryExprNodeAndGetType(const shared_ptr<ast::BinaryExprNode
     CheckExprAndGetType(expr->x_, &lhs_type);
     CheckExprAndGetType(expr->y_, &rhs_type);
 
-    if (lhs_type->Type() != rhs_type->Type()) {
-        errors_->Emplace(expr->Pos(), ec::Type::NotInHomeWork, "binary expr, lhs and rhs type not matched");
-        return;
-    }
-
     *typ = lhs_type;
 }
 
@@ -1128,10 +1118,5 @@ void Checker::CheckCondExpr(const shared_ptr<ast::ExprNode>& cond_expr) {
     shared_ptr<ast::TypeNode> lhs_type, rhs_type;
     CheckExprAndGetType(binary_expr->x_, &lhs_type);
     CheckExprAndGetType(binary_expr->y_, &rhs_type);
-    
-    if (lhs_type->Type() != rhs_type->Type()) {
-        errors_->Emplace(binary_expr->Pos(), ec::Type::CondValueNotMatched, "CheckCondExpr: lhs and rhs type not matched");
-        return;
-    }
 }
 }
