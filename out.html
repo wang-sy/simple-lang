@@ -1,0 +1,496 @@
+<FileNode>
+    <name></name>
+    <decl>
+        <FuncDeclNode>
+            <pos>(1, 1)</pos>
+            <type>
+                <VoidTypeNode>
+                    <pos>(1, 1)</pos>
+                </VoidTypeNode>
+            </type>
+            <name>
+                <IdentNode>
+                    <pos>(1, 6)</pos>
+                    <name>main</name>
+                </IdentNode>
+            </name>
+            <params>
+                <FieldListNode>
+                    <pos>(1, 10)</pos>
+                </FieldListNode>
+            </params>
+
+            <body>
+                <BlockStmtNode>
+                    <pos>(1, 13)</pos>
+                    <stmt>
+                        <DeclStmtNode>
+                            <pos>(3, 5)</pos>
+                            <decl>
+                                <VarDeclNode>
+                                    <pos>(2, 5)</pos>
+                                    <decl>
+                                        <SingleVarDeclNode>
+                                            <pos>(2, 10)</pos>
+                                            <is_const>false</is_const>
+                                            <type>
+                                                <CharTypeNode>
+                                                    <pos>(2, 5)</pos>
+                                                </CharTypeNode>
+                                            </type>
+                                            <name>
+                                                <IdentNode>
+                                                    <pos>(2, 10)</pos>
+                                                    <name>c</name>
+                                                </IdentNode>
+                                            </name>
+                                            <val>
+                                                <BasicLitNode>
+                                                    <pos>(2, 12)</pos>
+                                                    <tok>CHARCON</tok>
+                                                    <val>'!'</val>
+                                                </BasicLitNode>
+                                            </val>
+                                        </SingleVarDeclNode>
+                                    </decl>
+                                </VarDeclNode>
+                            </decl>
+                        </DeclStmtNode>
+                    </stmt>
+                    <stmt>
+                        <DeclStmtNode>
+                            <pos>(4, 5)</pos>
+                            <decl>
+                                <VarDeclNode>
+                                    <pos>(3, 5)</pos>
+                                    <decl>
+                                        <SingleVarDeclNode>
+                                            <pos>(3, 10)</pos>
+                                            <is_const>false</is_const>
+                                            <type>
+                                                <CharTypeNode>
+                                                    <pos>(3, 5)</pos>
+                                                </CharTypeNode>
+                                            </type>
+                                            <name>
+                                                <IdentNode>
+                                                    <pos>(3, 10)</pos>
+                                                    <name>d</name>
+                                                </IdentNode>
+                                            </name>
+                                            <val></val>
+                                        </SingleVarDeclNode>
+                                    </decl>
+                                </VarDeclNode>
+                            </decl>
+                        </DeclStmtNode>
+                    </stmt>
+                    <stmt>
+                        <DeclStmtNode>
+                            <pos>(5, 5)</pos>
+                            <decl>
+                                <VarDeclNode>
+                                    <pos>(4, 5)</pos>
+                                    <decl>
+                                        <SingleVarDeclNode>
+                                            <pos>(4, 9)</pos>
+                                            <is_const>false</is_const>
+                                            <type>
+                                                <IntTypeNode>
+                                                    <pos>(4, 5)</pos>
+                                                </IntTypeNode>
+                                            </type>
+                                            <name>
+                                                <IdentNode>
+                                                    <pos>(4, 9)</pos>
+                                                    <name>a</name>
+                                                </IdentNode>
+                                            </name>
+                                            <val></val>
+                                        </SingleVarDeclNode>
+                                    </decl>
+                                    <decl>
+                                        <SingleVarDeclNode>
+                                            <pos>(4, 12)</pos>
+                                            <is_const>false</is_const>
+                                            <type>
+                                                <IntTypeNode>
+                                                    <pos>(4, 5)</pos>
+                                                </IntTypeNode>
+                                            </type>
+                                            <name>
+                                                <IdentNode>
+                                                    <pos>(4, 12)</pos>
+                                                    <name>b</name>
+                                                </IdentNode>
+                                            </name>
+                                            <val></val>
+                                        </SingleVarDeclNode>
+                                    </decl>
+                                </VarDeclNode>
+                            </decl>
+                        </DeclStmtNode>
+                    </stmt>
+                    <stmt>
+                        <ScanStmtNode>
+                            <pos>(5, 5)</pos><var>
+                                <IdentNode>
+                                    <pos>(5, 11)</pos>
+                                    <name>a</name>
+                                </IdentNode>
+                            </var>
+                        </ScanStmtNode>
+                    </stmt>
+                    <stmt>
+                        <ScanStmtNode>
+                            <pos>(6, 5)</pos><var>
+                                <IdentNode>
+                                    <pos>(6, 11)</pos>
+                                    <name>c</name>
+                                </IdentNode>
+                            </var>
+                        </ScanStmtNode>
+                    </stmt>
+                    <stmt>
+                        <ScanStmtNode>
+                            <pos>(7, 5)</pos><var>
+                                <IdentNode>
+                                    <pos>(7, 11)</pos>
+                                    <name>b</name>
+                                </IdentNode>
+                            </var>
+                        </ScanStmtNode>
+                    </stmt>
+                    <stmt>
+                        <SwitchStmtNode>
+                            <pos>(8, 5)</pos>
+                            <cond>
+                                <IdentNode>
+                                    <pos>(8, 13)</pos>
+                                    <name>c</name>
+                                </IdentNode>
+                            </cond>
+                            <case>
+                                <CaseStmtNode>
+                                    <pos>(9, 9)</pos>
+                                    <cond>
+                                        <BasicLitNode>
+                                            <pos>(9, 14)</pos>
+                                            <tok>CHARCON</tok>
+                                            <val>'+'</val>
+                                        </BasicLitNode>
+                                    </cond>
+
+                                    <body>
+                                        <PrintfStmtNode>
+                                            <pos>(9, 19)</pos>
+                                            <arg>
+                                                <BinaryExprNode>
+                                                    <pos>(9, 26)</pos>
+                                                    <op>PLUS</op>
+                                                    <x>
+                                                        <IdentNode>
+                                                            <pos>(9, 26)</pos>
+                                                            <name>a</name>
+                                                        </IdentNode>
+                                                    </x>
+                                                    <y>
+                                                        <IdentNode>
+                                                            <pos>(9, 30)</pos>
+                                                            <name>b</name>
+                                                        </IdentNode>
+                                                    </y>
+                                                </BinaryExprNode>
+                                            </arg>
+                                        </PrintfStmtNode>
+                                    </body>
+                                </CaseStmtNode>
+                            </case>
+                            <case>
+                                <CaseStmtNode>
+                                    <pos>(10, 9)</pos>
+                                    <cond>
+                                        <BasicLitNode>
+                                            <pos>(10, 14)</pos>
+                                            <tok>CHARCON</tok>
+                                            <val>'-'</val>
+                                        </BasicLitNode>
+                                    </cond>
+
+                                    <body>
+                                        <PrintfStmtNode>
+                                            <pos>(10, 19)</pos>
+                                            <arg>
+                                                <BinaryExprNode>
+                                                    <pos>(10, 26)</pos>
+                                                    <op>MINU</op>
+                                                    <x>
+                                                        <IdentNode>
+                                                            <pos>(10, 26)</pos>
+                                                            <name>a</name>
+                                                        </IdentNode>
+                                                    </x>
+                                                    <y>
+                                                        <IdentNode>
+                                                            <pos>(10, 30)</pos>
+                                                            <name>b</name>
+                                                        </IdentNode>
+                                                    </y>
+                                                </BinaryExprNode>
+                                            </arg>
+                                        </PrintfStmtNode>
+                                    </body>
+                                </CaseStmtNode>
+                            </case>
+                            <case>
+                                <CaseStmtNode>
+                                    <pos>(11, 9)</pos>
+                                    <cond>
+                                        <BasicLitNode>
+                                            <pos>(11, 14)</pos>
+                                            <tok>CHARCON</tok>
+                                            <val>'*'</val>
+                                        </BasicLitNode>
+                                    </cond>
+
+                                    <body>
+                                        <PrintfStmtNode>
+                                            <pos>(11, 19)</pos>
+                                            <arg>
+                                                <BinaryExprNode>
+                                                    <pos>(11, 26)</pos>
+                                                    <op>MULT</op>
+                                                    <x>
+                                                        <IdentNode>
+                                                            <pos>(11, 26)</pos>
+                                                            <name>a</name>
+                                                        </IdentNode>
+                                                    </x>
+                                                    <y>
+                                                        <IdentNode>
+                                                            <pos>(11, 30)</pos>
+                                                            <name>b</name>
+                                                        </IdentNode>
+                                                    </y>
+                                                </BinaryExprNode>
+                                            </arg>
+                                        </PrintfStmtNode>
+                                    </body>
+                                </CaseStmtNode>
+                            </case>
+                            <case>
+                                <CaseStmtNode>
+                                    <pos>(12, 9)</pos>
+                                    <cond>
+                                        <BasicLitNode>
+                                            <pos>(12, 14)</pos>
+                                            <tok>CHARCON</tok>
+                                            <val>'/'</val>
+                                        </BasicLitNode>
+                                    </cond>
+
+                                    <body>
+                                        <PrintfStmtNode>
+                                            <pos>(12, 19)</pos>
+                                            <arg>
+                                                <BinaryExprNode>
+                                                    <pos>(12, 26)</pos>
+                                                    <op>DIV</op>
+                                                    <x>
+                                                        <IdentNode>
+                                                            <pos>(12, 26)</pos>
+                                                            <name>a</name>
+                                                        </IdentNode>
+                                                    </x>
+                                                    <y>
+                                                        <IdentNode>
+                                                            <pos>(12, 30)</pos>
+                                                            <name>b</name>
+                                                        </IdentNode>
+                                                    </y>
+                                                </BinaryExprNode>
+                                            </arg>
+                                        </PrintfStmtNode>
+                                    </body>
+                                </CaseStmtNode>
+                            </case>
+                            <case>
+                                <CaseStmtNode>
+                                    <pos>(13, 9)</pos>
+                                    <cond></cond>
+
+                                    <body>
+                                        <PrintfStmtNode>
+                                            <pos>(13, 18)</pos>
+                                            <arg>
+                                                <BasicLitNode>
+                                                    <pos>(13, 25)</pos>
+                                                    <tok>STRCON</tok>
+                                                    <val>"error!"</val>
+                                                </BasicLitNode>
+                                            </arg>
+                                        </PrintfStmtNode>
+                                    </body>
+                                </CaseStmtNode>
+                            </case>
+                        </SwitchStmtNode>
+                    </stmt>
+                    <stmt>
+                        <SwitchStmtNode>
+                            <pos>(15, 5)</pos>
+                            <cond>
+                                <IdentNode>
+                                    <pos>(15, 13)</pos>
+                                    <name>a</name>
+                                </IdentNode>
+                            </cond>
+                            <case>
+                                <CaseStmtNode>
+                                    <pos>(16, 9)</pos>
+                                    <cond>
+                                        <BasicLitNode>
+                                            <pos>(16, 14)</pos>
+                                            <tok>INTCON</tok>
+                                            <val>1</val>
+                                        </BasicLitNode>
+                                    </cond>
+
+                                    <body>
+                                        <PrintfStmtNode>
+                                            <pos>(16, 17)</pos>
+                                            <arg>
+                                                <BasicLitNode>
+                                                    <pos>(16, 24)</pos>
+                                                    <tok>INTCON</tok>
+                                                    <val>1</val>
+                                                </BasicLitNode>
+                                            </arg>
+                                        </PrintfStmtNode>
+                                    </body>
+                                </CaseStmtNode>
+                            </case>
+                            <case>
+                                <CaseStmtNode>
+                                    <pos>(17, 9)</pos>
+                                    <cond></cond>
+
+                                    <body>
+                                        <PrintfStmtNode>
+                                            <pos>(17, 18)</pos>
+                                            <arg>
+                                                <BasicLitNode>
+                                                    <pos>(17, 25)</pos>
+                                                    <tok>STRCON</tok>
+                                                    <val>""</val>
+                                                </BasicLitNode>
+                                            </arg>
+                                        </PrintfStmtNode>
+                                    </body>
+                                </CaseStmtNode>
+                            </case>
+                        </SwitchStmtNode>
+                    </stmt>
+                    <stmt>
+                        <ForStmtNode>
+                            <pos>(19, 5)</pos>
+                            <init>
+                                <ExprStmtNode>
+                                    <pos>(19, 17)</pos>
+                                    <expr>
+                                        <BinaryExprNode>
+                                            <pos>(19, 17)</pos>
+                                            <op>LSS</op>
+                                            <x>
+                                                <IdentNode>
+                                                    <pos>(19, 17)</pos>
+                                                    <name>a</name>
+                                                </IdentNode>
+                                            </x>
+                                            <y>
+                                                <BasicLitNode>
+                                                    <pos>(19, 21)</pos>
+                                                    <tok>INTCON</tok>
+                                                    <val>6</val>
+                                                </BasicLitNode>
+                                            </y>
+                                        </BinaryExprNode>
+                                    </expr>
+                                </ExprStmtNode>
+                            </init>
+                            <cond></cond>
+                            <step>
+                                <AssignStmtNode>
+                                    <pos>(19, 24)</pos>
+                                    <lhs>
+                                        <IdentNode>
+                                            <pos>(19, 24)</pos>
+                                            <name>a</name>
+                                        </IdentNode>
+                                    </lhs>
+                                    <rhs>
+                                        <BinaryExprNode>
+                                            <pos>(19, 28)</pos>
+                                            <op>PLUS</op>
+                                            <x>
+                                                <IdentNode>
+                                                    <pos>(19, 28)</pos>
+                                                    <name>a</name>
+                                                </IdentNode>
+                                            </x>
+                                            <y>
+                                                <BasicLitNode>
+                                                    <pos>(19, 32)</pos>
+                                                    <tok>INTCON</tok>
+                                                    <val>1</val>
+                                                </BasicLitNode>
+                                            </y>
+                                        </BinaryExprNode>
+                                    </rhs>
+                                </AssignStmtNode>
+                            </step>
+
+                            <body>
+                                <BlockStmtNode>
+                                    <pos>(19, 35)</pos>
+                                    <stmt>
+                                        <ScanStmtNode>
+                                            <pos>(20, 9)</pos><var>
+                                                <IdentNode>
+                                                    <pos>(20, 15)</pos>
+                                                    <name>b</name>
+                                                </IdentNode>
+                                            </var>
+                                        </ScanStmtNode>
+                                    </stmt>
+                                    <stmt>
+                                        <PrintfStmtNode>
+                                            <pos>(21, 9)</pos>
+                                            <arg>
+                                                <IdentNode>
+                                                    <pos>(21, 16)</pos>
+                                                    <name>b</name>
+                                                </IdentNode>
+                                            </arg>
+                                        </PrintfStmtNode>
+                                    </stmt>
+                                </BlockStmtNode>
+                            </body>
+                        </ForStmtNode>
+                    </stmt>
+                    <stmt>
+                        <PrintfStmtNode>
+                            <pos>(23, 5)</pos>
+                            <arg>
+                                <BasicLitNode>
+                                    <pos>(23, 12)</pos>
+                                    <tok>STRCON</tok>
+                                    <val>"file3 over!"</val>
+                                </BasicLitNode>
+                            </arg>
+                        </PrintfStmtNode>
+                    </stmt>
+                </BlockStmtNode>
+            </body>
+        </FuncDeclNode>
+    </decl>
+</FileNode>

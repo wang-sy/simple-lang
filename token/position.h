@@ -7,8 +7,16 @@
 using namespace std;
 
 namespace token{
-
 class Position {
+public:
+    const string ToString() const {return "(" + to_string(line) + ", " + to_string(column) + ")";}
+    bool operator<(const Position& other) const {
+        if (line == other.line) {
+            return column < other.column;
+        }
+
+        return  line < other.line;
+    }
 public:
     string filename;
     int offset; // offset, starting at 0
@@ -35,6 +43,13 @@ public:
 private:
     vector<int> lines_{};
     mutex mux_{};
+};
+
+const Position npos = Position{
+    .filename="",
+    .offset=-1,
+    .line=-1,
+    .column=-1
 };
 
 }// namespace token

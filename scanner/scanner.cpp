@@ -169,7 +169,7 @@ void Scanner::Scan(int *pos, token::Token *tok, string *lit) {
 }
 
 void Scanner::Next() {
-    if (read_offset_ >= src_.size()) {
+    if (read_offset_ >= (int)src_.size()) {
         offset_ = (int)src_.size();
         if (ch_ == '\n') {
             file_->AddLine(offset_);

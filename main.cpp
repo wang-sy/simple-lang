@@ -4,6 +4,8 @@
 
 #include "scanner/scanner.h"
 #include "parser/parser.h"
+#include "error.h"
+#include "check/check.h"
 
 using namespace std;
 
@@ -77,16 +79,61 @@ void ParsingMain() {
     test_file->size = (int)txt.size();
 
     auto err_handler = make_shared<StdErrHandler>();
+    auto error_reporter = make_shared<ec::ErrorReminder>(true, cerr);
 
-    Parser parser(test_file, txt, err_handler);
+    Parser parser(test_file, txt, err_handler, error_reporter);
     auto ast_file = parser.Parse();
 
-    cout << ast_file.ToString() << endl;
+    cout << ast_file->ToString() << endl;
 
     parser.ReportErrors();
 }
 
+void ErrorMain() {
+    auto test_file = make_shared<token::File>();
+    test_file->name = "testfile.txt";
+    string txt = GetInputFile(test_file->name);
+    test_file->size = (int)txt.size();
+
+    ofstream out_file("error.txt");
+
+    auto err_handler = make_shared<StdErrHandler>();
+    auto error_reporter = make_shared<ec::ErrorReminder>(true, out_file);
+
+    Parser parser(test_file, txt, err_handler, error_reporter);
+
+    check::Checker c(parser.Parse(), error_reporter);
+
+    c.Check();
+
+    out_file.close();
+
+    ifstream pos_process_f_in("error.txt");
+
+    string output_full_text;
+
+    string pre_line = "asdfzxvoihcxhsdf";
+    string line;
+    while (getline(pos_process_f_in, line)) {
+        if (line.substr(0, 2) == pre_line.substr(0, 2)) {
+            continue;
+        }
+
+        output_full_text += line + "\n";
+    }
+
+    pos_process_f_in.close();
+
+    ofstream pos_process_f_out("error.txt");
+    pos_process_f_out << output_full_text;
+    pos_process_f_out.close();
+    
+    // cout << ast_file.ToString() << endl;
+
+    // parser.ReportErrors();
+}
+
 int main() {
-    ParsingMain();
+    ErrorMain();
     return 0;
 }
